@@ -45,3 +45,7 @@ export function OrderCardSkeleton({ count = 3 }: OrderCardSkeletonProps) {
     </div>
   );
 }
+
+export function OrderDetailSkeleton() {
+  return <OrderCardSkeleton count={1} />;
+}

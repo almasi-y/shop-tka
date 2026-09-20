@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-interface FeaturedToggleProps extends DocumentHandle {}
+type FeaturedToggleProps = DocumentHandle;
 
 function FeaturedToggleContent(handle: FeaturedToggleProps) {
   const { data: featured } = useDocument({ ...handle, path: "featured" });

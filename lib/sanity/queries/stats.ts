@@ -1,31 +1,5 @@
 import { defineQuery } from "next-sanity";
 
-/**
- * Get total product count
- */
-export const PRODUCT_COUNT_QUERY = defineQuery(`count(*[_type == "product"])`);
-
-/**
- * Get total order count
- */
-export const ORDER_COUNT_QUERY = defineQuery(`count(*[_type == "order"])`);
-
-/**
- * Get total revenue from completed orders
- */
-export const TOTAL_REVENUE_QUERY = defineQuery(`math::sum(*[
-  _type == "order"
-  && status in ["paid", "shipped", "delivered"]
-].total)`);
-
-// ============================================
-// AI Insights Analytics Queries
-// ============================================
-
-/**
- * Get orders from the last 7 days with details
- * Excludes draft documents
- */
 export const ORDERS_LAST_7_DAYS_QUERY = defineQuery(`*[
   _type == "order"
   && createdAt >= $startDate
@@ -33,22 +7,25 @@ export const ORDERS_LAST_7_DAYS_QUERY = defineQuery(`*[
 ] | order(createdAt desc) {
   _id,
   orderNumber,
-  total,
+  "total": coalesce(totalPrice, total),
   status,
   createdAt,
-  "itemCount": count(items),
-  items[]{
+  "itemCount": select(defined(products) => count(products), count(items)),
+  products[]->{
+    "productName": coalesce(title, name),
+    "productId": _id,
+    price
+  },
+  quantities,
+  productPrices,
+  "legacyItems": items[]{
     quantity,
     priceAtPurchase,
-    "productName": product->name,
+    "productName": coalesce(product->title, product->name),
     "productId": product->_id
   }
 }`);
 
-/**
- * Get order status distribution
- * Excludes draft documents to get accurate counts
- */
 export const ORDER_STATUS_DISTRIBUTION_QUERY = defineQuery(`{
   "paid": count(*[_type == "order" && status == "paid" && !(_id in path("drafts.**"))]),
   "shipped": count(*[_type == "order" && status == "shipped" && !(_id in path("drafts.**"))]),
@@ -56,38 +33,34 @@ export const ORDER_STATUS_DISTRIBUTION_QUERY = defineQuery(`{
   "cancelled": count(*[_type == "order" && status == "cancelled" && !(_id in path("drafts.**"))])
 }`);
 
-/**
- * Get top selling products by quantity sold
- * Excludes draft documents
- */
 export const TOP_SELLING_PRODUCTS_QUERY = defineQuery(`*[
   _type == "order"
   && status in ["paid", "shipped", "delivered"]
   && !(_id in path("drafts.**"))
 ] {
-  items[]{
+  products[]->{
+    "productId": _id,
+    "productName": coalesce(title, name),
+    "productPrice": price
+  },
+  quantities,
+  productPrices,
+  "legacyItems": items[]{
     "productId": product->_id,
-    "productName": product->name,
+    "productName": coalesce(product->title, product->name),
     "productPrice": product->price,
     quantity
   }
-}.items[]`);
+}`);
 
-/**
- * Get all products with stock and sales data for inventory analysis
- */
 export const PRODUCTS_INVENTORY_QUERY = defineQuery(`*[_type == "product"] {
   _id,
-  name,
+  "name": coalesce(title, name),
   price,
   stock,
   "category": category->title
 }`);
 
-/**
- * Get unfulfilled orders (paid but not yet shipped)
- * Excludes draft documents to get accurate counts
- */
 export const UNFULFILLED_ORDERS_QUERY = defineQuery(`*[
   _type == "order"
   && status == "paid"
@@ -95,30 +68,26 @@ export const UNFULFILLED_ORDERS_QUERY = defineQuery(`*[
 ] | order(createdAt asc) {
   _id,
   orderNumber,
-  total,
+  "total": coalesce(totalPrice, total),
   createdAt,
-  email,
-  "itemCount": count(items)
+  "email": coalesce(customerEmail, email),
+  "itemCount": select(defined(products) => count(products), count(items))
 }`);
 
-/**
- * Get revenue comparison data (current vs previous period)
- * Excludes draft documents
- */
 export const REVENUE_BY_PERIOD_QUERY = defineQuery(`{
   "currentPeriod": math::sum(*[
     _type == "order"
     && status in ["paid", "shipped", "delivered"]
     && createdAt >= $currentStart
     && !(_id in path("drafts.**"))
-  ].total),
+  ]{"value": coalesce(totalPrice, total)}.value),
   "previousPeriod": math::sum(*[
     _type == "order"
     && status in ["paid", "shipped", "delivered"]
     && createdAt >= $previousStart
     && createdAt < $currentStart
     && !(_id in path("drafts.**"))
-  ].total),
+  ]{"value": coalesce(totalPrice, total)}.value),
   "currentOrderCount": count(*[
     _type == "order"
     && createdAt >= $currentStart

@@ -3,7 +3,7 @@
 import {
   createContext,
   useContext,
-  useRef,
+  useState,
   useEffect,
   type ReactNode,
 } from "react";
@@ -37,20 +37,18 @@ export const CartStoreProvider = ({
   children,
   initialState,
 }: CartStoreProviderProps) => {
-  const storeRef = useRef<CartStoreApi | null>(null);
-
-  if (storeRef.current === null) {
-    storeRef.current = createCartStore(initialState ?? defaultInitState);
-  }
+  const [store] = useState(() =>
+    createCartStore(initialState ?? defaultInitState),
+  );
 
   // Manually trigger rehydration on the client after mount
   // This prevents SSR hydration mismatches since localStorage isn't available on server
   useEffect(() => {
-    storeRef.current?.persist.rehydrate();
-  }, []);
+    void store.persist.rehydrate();
+  }, [store]);
 
   return (
-    <CartStoreContext.Provider value={storeRef.current}>
+    <CartStoreContext.Provider value={store}>
       {children}
     </CartStoreContext.Provider>
   );

@@ -6,13 +6,17 @@ import { Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCartItems } from "@/lib/store/cart-store-provider";
-import { createCheckoutSession } from "@/lib/actions/checkout";
+import type { ShippingAddress } from "@/lib/checkout/shipping-address";
 
 interface CheckoutButtonProps {
   disabled?: boolean;
+  shippingAddress: ShippingAddress;
 }
 
-export function CheckoutButton({ disabled }: CheckoutButtonProps) {
+export function CheckoutButton({
+  disabled,
+  shippingAddress,
+}: CheckoutButtonProps) {
   const router = useRouter();
   const items = useCartItems();
   const [isPending, startTransition] = useTransition();
@@ -22,11 +26,15 @@ export function CheckoutButton({ disabled }: CheckoutButtonProps) {
     setError(null);
 
     startTransition(async () => {
-      const result = await createCheckoutSession(items);
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, shippingAddress }),
+      });
+      const result = await response.json();
 
-      if (result.success && result.url) {
-        // Redirect to Stripe Checkout
-        router.push(result.url);
+      if (response.ok && result.authorizationUrl) {
+        router.push(result.authorizationUrl);
       } else {
         setError(result.error ?? "Checkout failed");
         toast.error("Checkout Error", {
@@ -52,7 +60,7 @@ export function CheckoutButton({ disabled }: CheckoutButtonProps) {
         ) : (
           <>
             <CreditCard className="mr-2 h-5 w-5" />
-            Pay with Stripe
+            Pay with Paystack
           </>
         )}
       </Button>

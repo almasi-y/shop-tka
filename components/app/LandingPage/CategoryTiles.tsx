@@ -3,10 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Grid2x2 } from "lucide-react";
-import type { ALL_CATEGORIES_QUERYResult } from "@/sanity.types";
+import type { ALL_CATEGORIES_QUERY_RESULT } from "@/sanity.types";
 
 interface CategoryTilesProps {
-  categories: ALL_CATEGORIES_QUERYResult;
+  categories: ALL_CATEGORIES_QUERY_RESULT;
   activeCategory?: string;
 }
 
@@ -14,6 +14,19 @@ export function CategoryTiles({
   categories,
   activeCategory,
 }: CategoryTilesProps) {
+  const categoryById = new Map(
+    categories.map((category) => [category._id, category]),
+  );
+  const activePath = new Set<string>();
+  let active = categories.find((category) => category.slug === activeCategory);
+  while (active && !activePath.has(active._id)) {
+    activePath.add(active._id);
+    active = active.parentId ? categoryById.get(active.parentId) : undefined;
+  }
+  const topLevelCategories = categories.filter(
+    (category) => !category.parentId,
+  );
+
   return (
     <div className="relative">
       {/* Horizontal scrolling container - full width with edge padding */}
@@ -49,14 +62,14 @@ export function CategoryTiles({
         </Link>
 
         {/* Category tiles */}
-        {categories.map((category) => {
-          const isActive = activeCategory === category.slug;
+        {topLevelCategories.map((category) => {
+          const isActive = activePath.has(category._id);
           const imageUrl = category.image?.asset?.url;
 
           return (
             <Link
               key={category._id}
-              href={`/?category=${category.slug}`}
+              href={`/category/${category.slug}`}
               className={`group relative flex-shrink-0 overflow-hidden rounded-xl transition-all duration-300 ${
                 isActive
                   ? "ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-zinc-900"

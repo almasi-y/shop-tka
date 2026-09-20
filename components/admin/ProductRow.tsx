@@ -39,7 +39,7 @@ function ProductRowContent(handle: DocumentHandle) {
   const { data } = useDocumentProjection<ProductProjection>({
     ...handle,
     projection: `{
-      name,
+      "name": coalesce(title, name),
       "slug": slug.current,
       stock,
       price,
@@ -74,7 +74,7 @@ function ProductRowContent(handle: DocumentHandle) {
               src={data.image.asset.url}
               alt={data.name}
               fill
-              className="object-cover"
+              className="object-contain p-1"
               sizes="48px"
             />
           ) : (
@@ -98,7 +98,7 @@ function ProductRowContent(handle: DocumentHandle) {
                 src={data.image.asset.url}
                 alt={data.name}
                 fill
-                className="object-cover"
+                className="object-contain p-1"
                 sizes="48px"
               />
             ) : (

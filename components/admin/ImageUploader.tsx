@@ -231,7 +231,7 @@ function ImageThumbnail({
           src={imageUrl}
           alt="Product image"
           fill
-          className="object-cover"
+          className="object-contain p-1"
           sizes="150px"
         />
       ) : (

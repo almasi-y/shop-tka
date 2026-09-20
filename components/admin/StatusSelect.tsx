@@ -16,9 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ORDER_STATUS_CONFIG, getOrderStatus, type OrderStatusValue } from "@/lib/constants/orderStatus";
+import { ORDER_STATUS_CONFIG, getOrderStatus } from "@/lib/constants/orderStatus";
 
-interface StatusSelectProps extends DocumentHandle {}
+type StatusSelectProps = DocumentHandle;
 
 function StatusSelectContent(handle: StatusSelectProps) {
   const { data: status } = useDocument({ ...handle, path: "status" });
@@ -29,7 +29,8 @@ function StatusSelectContent(handle: StatusSelectProps) {
   const statusConfig = getOrderStatus(currentStatus);
   const StatusIcon = statusConfig.icon;
 
-  const handleStatusChange = async (value: string) => {
+  const handleStatusChange = async (value: string | null) => {
+    if (!value) return;
     editStatus(value);
     // Auto-publish status changes so they take effect immediately
     await apply(publishDocument(handle));

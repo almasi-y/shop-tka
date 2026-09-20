@@ -10,6 +10,7 @@ export const ALL_CATEGORIES_QUERY = defineQuery(`*[
   _id,
   title,
   "slug": slug.current,
+  "parentId": parentCategory._ref,
   "image": image{
     asset->{
       _id,
@@ -29,6 +30,7 @@ export const CATEGORY_BY_SLUG_QUERY = defineQuery(`*[
   _id,
   title,
   "slug": slug.current,
+  "parentId": parentCategory._ref,
   "image": image{
     asset->{
       _id,

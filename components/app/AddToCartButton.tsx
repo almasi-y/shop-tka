@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface AddToCartButtonProps {
   productId: string;
+  slug?: string;
   name: string;
   price: number;
   image?: string;
@@ -17,6 +18,7 @@ interface AddToCartButtonProps {
 
 export function AddToCartButton({
   productId,
+  slug,
   name,
   price,
   image,
@@ -32,7 +34,7 @@ export function AddToCartButton({
 
   const handleAdd = () => {
     if (quantityInCart < stock) {
-      addItem({ productId, name, price, image }, 1);
+      addItem({ productId, slug, name, price, image }, 1);
       toast.success(`Added ${name}`);
     }
   };

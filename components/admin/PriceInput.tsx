@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface PriceInputProps extends DocumentHandle {}
+type PriceInputProps = DocumentHandle;
 
 function PriceInputContent(handle: PriceInputProps) {
   const { data: price } = useDocument({ ...handle, path: "price" });
@@ -17,7 +17,7 @@ function PriceInputContent(handle: PriceInputProps) {
 
   return (
     <div className="flex items-center gap-1">
-      <span className="text-sm text-zinc-500">£</span>
+      <span className="text-sm text-zinc-500">KSh</span>
       <Input
         type="number"
         min={0}

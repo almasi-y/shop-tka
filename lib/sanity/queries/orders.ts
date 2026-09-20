@@ -1,27 +1,25 @@
 import { defineQuery } from "next-sanity";
 
-/**
- * Get orders by Clerk user ID
- * Used on orders list page
- */
 export const ORDERS_BY_USER_QUERY = defineQuery(`*[
   _type == "order"
   && clerkUserId == $clerkUserId
 ] | order(createdAt desc) {
   _id,
   orderNumber,
-  total,
+  "total": coalesce(totalPrice, total),
   status,
   createdAt,
-  "itemCount": count(items),
-  "itemNames": items[].product->name,
-  "itemImages": items[].product->images[0].asset->url
+  "itemCount": select(defined(products) => count(products), count(items)),
+  "itemNames": select(
+    defined(products) => products[]->{"value": coalesce(title, name)}.value,
+    coalesce(items[].product->title, items[].product->name)
+  ),
+  "itemImages": select(
+    defined(products) => products[]->images[0].asset->url,
+    items[].product->images[0].asset->url
+  )
 }`);
 
-/**
- * Get single order by ID with full details
- * Used on order detail page
- */
 export const ORDER_BY_ID_QUERY = defineQuery(`*[
   _type == "order"
   && _id == $id
@@ -29,14 +27,27 @@ export const ORDER_BY_ID_QUERY = defineQuery(`*[
   _id,
   orderNumber,
   clerkUserId,
-  email,
-  items[]{
+  "email": coalesce(customerEmail, email),
+  products[]->{
+    _id,
+    "name": coalesce(title, name),
+    "slug": slug.current,
+    "image": images[0]{
+      asset->{
+        _id,
+        url
+      }
+    }
+  },
+  quantities,
+  productPrices,
+  "legacyItems": items[]{
     _key,
     quantity,
     priceAtPurchase,
     product->{
       _id,
-      name,
+      "name": coalesce(title, name),
       "slug": slug.current,
       "image": images[0]{
         asset->{
@@ -46,39 +57,23 @@ export const ORDER_BY_ID_QUERY = defineQuery(`*[
       }
     }
   },
-  total,
+  "total": coalesce(totalPrice, total),
   status,
-  address{
-    name,
-    line1,
-    line2,
-    city,
-    postcode,
-    country
-  },
-  stripePaymentId,
+  "address": coalesce(shippingAddress, address),
+  paystackReference,
   createdAt
 }`);
 
-/**
- * Get recent orders (for admin dashboard)
- */
-export const RECENT_ORDERS_QUERY = defineQuery(`*[
+export const ORDER_BY_PAYSTACK_REFERENCE_QUERY = defineQuery(`*[
   _type == "order"
-] | order(createdAt desc) [0...$limit] {
-  _id,
-  orderNumber,
-  email,
-  total,
-  status,
-  createdAt
-}`);
-
-/**
- * Check if order exists by Stripe payment ID
- * Used for webhook idempotency check
- */
-export const ORDER_BY_STRIPE_PAYMENT_ID_QUERY = defineQuery(`*[
-  _type == "order"
-  && stripePaymentId == $stripePaymentId
+  && paystackReference == $paystackReference
 ][0]{ _id }`);
+
+export const ORDER_STATUS_BY_PAYSTACK_REFERENCE_QUERY = defineQuery(`*[
+  _type == "order"
+  && paystackReference == $paystackReference
+][0]{
+  _id,
+  clerkUserId,
+  status
+}`);

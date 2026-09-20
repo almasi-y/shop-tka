@@ -23,6 +23,7 @@ export function CartItem({ item, stockInfo }: CartItemProps) {
   const exceedsStock = stockInfo?.exceedsStock ?? false;
   const currentStock = stockInfo?.currentStock ?? 999;
   const hasIssue = isOutOfStock || exceedsStock;
+  const productSlug = item.slug ?? stockInfo?.slug;
 
   return (
     <div
@@ -43,7 +44,7 @@ export function CartItem({ item, stockInfo }: CartItemProps) {
             src={item.image}
             alt={item.name}
             fill
-            className="object-cover"
+            className="object-contain p-1"
             sizes="80px"
           />
         ) : (
@@ -56,15 +57,26 @@ export function CartItem({ item, stockInfo }: CartItemProps) {
       {/* Details */}
       <div className="flex flex-1 flex-col">
         <div className="flex justify-between">
-          <Link
-            href={`/products/${item.productId}`}
-            className={cn(
-              "font-medium text-zinc-900 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300",
-              isOutOfStock && "text-zinc-400 dark:text-zinc-500",
-            )}
-          >
-            {item.name}
-          </Link>
+          {productSlug ? (
+            <Link
+              href={`/products/${productSlug}`}
+              className={cn(
+                "font-medium text-zinc-900 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300",
+                isOutOfStock && "text-zinc-400 dark:text-zinc-500",
+              )}
+            >
+              {item.name}
+            </Link>
+          ) : (
+            <span
+              className={cn(
+                "font-medium text-zinc-900 dark:text-zinc-100",
+                isOutOfStock && "text-zinc-400 dark:text-zinc-500",
+              )}
+            >
+              {item.name}
+            </span>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -87,6 +99,7 @@ export function CartItem({ item, stockInfo }: CartItemProps) {
             <div className="w-32 flex self-end ml-auto">
               <AddToCartButton
                 productId={item.productId}
+                slug={item.slug}
                 name={item.name}
                 price={item.price}
                 image={item.image}

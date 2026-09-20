@@ -12,7 +12,7 @@ import {
   type DocumentHandle,
 } from "@sanity/sdk-react";
 import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -91,16 +91,21 @@ function DeleteButtonContent({
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="destructive" size="sm" className="gap-1.5" asChild>
+          <TooltipTrigger
+            render={
               <Link
                 href={`/studio/structure/${handle.documentType};${baseId}`}
                 target="_blank"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete in Studio
-              </Link>
-            </Button>
+                className={buttonVariants({
+                  variant: "destructive",
+                  size: "sm",
+                  className: "gap-1.5",
+                })}
+              />
+            }
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete in Studio
           </TooltipTrigger>
           <TooltipContent>
             <p>

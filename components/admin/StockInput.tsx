@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-interface StockInputProps extends DocumentHandle {}
+type StockInputProps = DocumentHandle;
 
 function StockInputContent(handle: StockInputProps) {
   const { data: stock } = useDocument({ ...handle, path: "stock" });

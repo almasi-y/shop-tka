@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useAuthToken } from "@sanity/sdk-react";
 
 interface SalesTrends {
   summary: string;
@@ -101,6 +102,7 @@ function TrendIcon({ trend }: { trend: "up" | "down" | "stable" }) {
 }
 
 export function AIInsightsCard() {
+  const authToken = useAuthToken();
   const [data, setData] = useState<InsightsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +118,13 @@ export function AIInsightsCard() {
       }
       setError(null);
 
-      const response = await fetch("/api/admin/insights");
+      if (!authToken) {
+        throw new Error("Sanity authentication is required");
+      }
+
+      const response = await fetch("/api/admin/insights", {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
       const result = await response.json();
 
       if (!result.success) {
@@ -130,7 +138,7 @@ export function AIInsightsCard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [authToken]);
 
   useEffect(() => {
     // Prevent double fetch in React StrictMode
@@ -222,7 +230,7 @@ export function AIInsightsCard() {
             Revenue (7d)
           </p>
           <p className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            £
+            KSh
             {Number(rawMetrics.currentRevenue).toLocaleString("en-GB", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -256,7 +264,7 @@ export function AIInsightsCard() {
             Avg Order
           </p>
           <p className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            £{rawMetrics.avgOrderValue}
+            KSh {rawMetrics.avgOrderValue}
           </p>
           <p className="text-xs text-zinc-500">Per order</p>
         </div>

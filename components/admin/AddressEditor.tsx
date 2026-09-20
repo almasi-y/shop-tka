@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface AddressEditorProps extends DocumentHandle {}
+type AddressEditorProps = DocumentHandle;
 
 function AddressField({
   handle,
@@ -23,7 +23,7 @@ function AddressField({
   label: string;
   placeholder?: string;
 }) {
-  const path = `address.${field}`;
+  const path = `shippingAddress.${field}`;
   const { data: value } = useDocument({ ...handle, path });
   const editField = useEditDocument({ ...handle, path });
 
@@ -57,14 +57,14 @@ function AddressEditorContent(handle: AddressEditorProps) {
       </Suspense>
       <div className="grid grid-cols-2 gap-3">
         <Suspense fallback={<Skeleton className="h-16" />}>
-          <AddressField handle={handle} field="city" label="City" placeholder="London" />
+          <AddressField handle={handle} field="city" label="City" placeholder="Nairobi" />
         </Suspense>
         <Suspense fallback={<Skeleton className="h-16" />}>
-          <AddressField handle={handle} field="postcode" label="Postcode" placeholder="SW1A 1AA" />
+          <AddressField handle={handle} field="postcode" label="Postal code" placeholder="00100" />
         </Suspense>
       </div>
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <AddressField handle={handle} field="country" label="Country" placeholder="United Kingdom" />
+        <AddressField handle={handle} field="country" label="Country" placeholder="Kenya" />
       </Suspense>
     </div>
   );

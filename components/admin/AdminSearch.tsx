@@ -62,8 +62,7 @@ export function useProductSearchFilter(searchQuery: string) {
 
   const filter = useMemo(() => {
     if (!debouncedQuery.trim()) return undefined;
-    // Search in name - GROQ match operator
-    return `name match "*${debouncedQuery}*"`;
+    return `coalesce(title, name) match "*${debouncedQuery}*"`;
   }, [debouncedQuery]);
 
   return { filter, isSearching: searchQuery !== debouncedQuery };
@@ -75,8 +74,7 @@ export function useOrderSearchFilter(searchQuery: string) {
 
   const filter = useMemo(() => {
     if (!debouncedQuery.trim()) return undefined;
-    // Search in orderNumber and email
-    return `orderNumber match "*${debouncedQuery}*" || email match "*${debouncedQuery}*"`;
+    return `orderNumber match "*${debouncedQuery}*" || coalesce(customerEmail, email) match "*${debouncedQuery}*"`;
   }, [debouncedQuery]);
 
   return { filter, isSearching: searchQuery !== debouncedQuery };

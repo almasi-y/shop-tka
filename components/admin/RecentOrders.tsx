@@ -26,8 +26,8 @@ function OrderRow(handle: DocumentHandle) {
     ...handle,
     projection: `{
       orderNumber,
-      email,
-      total,
+      "email": coalesce(customerEmail, email),
+      "total": coalesce(totalPrice, total),
       status,
       createdAt
     }`,

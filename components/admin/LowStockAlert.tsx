@@ -26,7 +26,7 @@ function LowStockProductRow(handle: DocumentHandle) {
   const { data } = useDocumentProjection<ProductProjection>({
     ...handle,
     projection: `{
-      name,
+      "name": coalesce(title, name),
       stock,
       "image": images[0]{
         asset->{
@@ -51,7 +51,7 @@ function LowStockProductRow(handle: DocumentHandle) {
             src={data.image.asset.url}
             alt={data.name}
             fill
-            className="object-cover"
+            className="object-contain p-1"
             sizes="40px"
           />
         ) : (

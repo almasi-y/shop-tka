@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-// import Autoplay from "embla-carousel-autoplay";
+import Autoplay from "embla-carousel-autoplay";
 import { ArrowRight } from "lucide-react";
 import {
   Carousel,
@@ -13,31 +13,33 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-// import { cn, formatPrice } from "@/lib/utils";
-import type { FEATURED_PRODUCTS_QUERYResult } from "@/sanity.types";
+import { cn, formatPrice } from "@/lib/utils";
+import type { FEATURED_PRODUCTS_QUERY_RESULT } from "@/sanity.types";
 
-type FeaturedProduct = FEATURED_PRODUCTS_QUERYResult[number];
+type FeaturedProduct = FEATURED_PRODUCTS_QUERY_RESULT[number];
 
 interface FeaturedCarouselProps {
-  products: FEATURED_PRODUCTS_QUERYResult;
+  products: FEATURED_PRODUCTS_QUERY_RESULT;
 }
 
 export function FeaturedCarousel({ products }: FeaturedCarouselProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
-  const [count, setCount] = useState(0);
+  const count = products.length;
 
   useEffect(() => {
     if (!api) return;
 
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap());
-
-    api.on("select", () => {
+    const handleSelect = () => {
       setCurrent(api.selectedScrollSnap());
-    });
+    };
+    api.on("select", handleSelect);
+
+    return () => {
+      api.off("select", handleSelect);
+    };
   }, [api]);
 
   const scrollTo = useCallback(
@@ -59,19 +61,19 @@ export function FeaturedCarousel({ products }: FeaturedCarouselProps) {
           loop: true,
           align: "start",
         }}
-        // plugins={[
-        //   Autoplay({
-        //     delay: 5000,
-        //     stopOnInteraction: false,
-        //     stopOnMouseEnter: true,
-        //   }),
-        // ]}
+        plugins={[
+          Autoplay({
+            delay: 5000,
+            stopOnInteraction: false,
+            stopOnMouseEnter: true,
+          }),
+        ]}
         className="w-full"
       >
         <CarouselContent className="-ml-0">
-          {products.map((product) => (
+          {products.map((product, index) => (
             <CarouselItem key={product._id} className="pl-0">
-              <FeaturedSlide product={product} />
+              <FeaturedSlide product={product} eager={index === 0} />
             </CarouselItem>
           ))}
         </CarouselContent>
@@ -106,9 +108,10 @@ export function FeaturedCarousel({ products }: FeaturedCarouselProps) {
 
 interface FeaturedSlideProps {
   product: FeaturedProduct;
+  eager?: boolean;
 }
 
-function FeaturedSlide({ product }: FeaturedSlideProps) {
+function FeaturedSlide({ product, eager = false }: FeaturedSlideProps) {
   const mainImage = product.images?.[0]?.asset?.url;
 
   return (
@@ -120,9 +123,9 @@ function FeaturedSlide({ product }: FeaturedSlideProps) {
             src={mainImage}
             alt={product.name ?? "Featured product"}
             fill
-            className="object-cover"
+            className="object-contain p-4 md:p-8"
             sizes="(max-width: 768px) 100vw, 60vw"
-            priority
+            loading={eager ? "eager" : "lazy"}
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-zinc-800">
@@ -161,16 +164,16 @@ function FeaturedSlide({ product }: FeaturedSlideProps) {
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button
-            asChild
-            size="lg"
-            className="bg-white text-zinc-900 hover:bg-zinc-100"
+          <Link
+            href={`/products/${product.slug}`}
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "bg-white text-zinc-900 hover:bg-zinc-100",
+            )}
           >
-            <Link href={`/products/${product.slug}`}>
-              Shop Now
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+            Shop Now
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
         </div>
       </div>
     </div>

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import type { PRODUCT_BY_SLUG_QUERYResult } from "@/sanity.types";
+import type { PRODUCT_BY_SLUG_QUERY_RESULT } from "@/sanity.types";
 
 type ProductImages = NonNullable<
-  NonNullable<PRODUCT_BY_SLUG_QUERYResult>["images"]
+  NonNullable<PRODUCT_BY_SLUG_QUERY_RESULT>["images"]
 >;
 
 interface ProductGalleryProps {
@@ -38,7 +38,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             fill
             className="object-contain"
             sizes="(max-width: 1024px) 100vw, 50vw"
-            priority
+            loading="eager"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-zinc-400">
@@ -69,7 +69,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
                   src={image.asset.url}
                   alt={`${productName} thumbnail ${index + 1}`}
                   fill
-                  className="object-cover"
+                  className="object-contain p-1"
                   sizes="100px"
                 />
               ) : (

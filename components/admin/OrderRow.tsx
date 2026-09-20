@@ -23,11 +23,11 @@ function OrderRowContent(handle: DocumentHandle) {
     ...handle,
     projection: `{
       orderNumber,
-      email,
-      total,
+      "email": coalesce(customerEmail, email),
+      "total": coalesce(totalPrice, total),
       status,
       createdAt,
-      "itemCount": count(items)
+      "itemCount": select(defined(products) => count(products), count(items))
     }`,
   });
 

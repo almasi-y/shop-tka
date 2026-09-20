@@ -1,23 +1,52 @@
-"use client";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
-import { SanityApp } from "@sanity/sdk-react";
-import { dataset, projectId } from "@/sanity/env";
+interface LoadingSpinnerProps {
+  text?: string;
+  size?: "sm" | "md" | "lg";
+  isFullScreen?: boolean;
+  className?: string;
+}
 
-function SanityAppProvider({ children }: { children: React.ReactNode }) {
+const sizeStyles = {
+  sm: "size-4",
+  md: "size-6",
+  lg: "size-8",
+};
+
+const textSizeStyles = {
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-lg",
+};
+
+function LoadingSpinner({
+  text,
+  size = "md",
+  isFullScreen = false,
+  className,
+}: LoadingSpinnerProps) {
   return (
-    <SanityApp
-      config={[
-        {
-          projectId,
-          dataset,
-        },
-      ]}
-      // We handle the loading state in the Providers component by showing a loading indicator via the dynamic import
-      fallback={<div />}
+    <div
+      className={cn(
+        "flex items-center justify-center gap-3",
+        isFullScreen && "min-h-screen p-8",
+        className,
+      )}
     >
-      {children}
-    </SanityApp>
+      <Spinner className={cn(sizeStyles[size], "text-muted-foreground")} />
+      {text && (
+        <span
+          className={cn(
+            "text-muted-foreground font-medium tracking-tight",
+            textSizeStyles[size],
+          )}
+        >
+          {text}
+        </span>
+      )}
+    </div>
   );
 }
 
-export default SanityAppProvider;
+export default LoadingSpinner;

@@ -7,6 +7,7 @@ import type { CartItem } from "@/lib/store/cart-store";
 
 export interface StockInfo {
   productId: string;
+  slug?: string;
   currentStock: number;
   isOutOfStock: boolean;
   exceedsStock: boolean;
@@ -59,6 +60,7 @@ export function useCartStock(items: CartItem[]): UseCartStockReturn {
 
         newStockMap.set(item.productId, {
           productId: item.productId,
+          slug: product?.slug ?? undefined,
           currentStock,
           isOutOfStock: currentStock === 0,
           exceedsStock: item.quantity > currentStock,
@@ -75,7 +77,8 @@ export function useCartStock(items: CartItem[]): UseCartStockReturn {
   }, [items, productIds]);
 
   useEffect(() => {
-    fetchStock();
+    const timeoutId = window.setTimeout(() => void fetchStock(), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [fetchStock]);
 
   const hasStockIssues = Array.from(stockMap.values()).some(

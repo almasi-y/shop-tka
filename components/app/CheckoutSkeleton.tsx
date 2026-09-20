@@ -1,66 +1,11 @@
-"use client";
-
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, CreditCard } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { useCartItems } from "@/lib/store/cart-store-provider";
-import { createCheckoutSession } from "@/lib/actions/checkout";
-
-interface CheckoutButtonProps {
-  disabled?: boolean;
-}
-
-export function CheckoutButton({ disabled }: CheckoutButtonProps) {
-  const router = useRouter();
-  const items = useCartItems();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  const handleCheckout = () => {
-    setError(null);
-
-    startTransition(async () => {
-      const result = await createCheckoutSession(items);
-
-      if (result.success && result.url) {
-        // Redirect to Stripe Checkout
-        router.push(result.url);
-      } else {
-        setError(result.error ?? "Checkout failed");
-        toast.error("Checkout Error", {
-          description: result.error ?? "Something went wrong",
-        });
-      }
-    });
-  };
-
+export function CheckoutSkeleton() {
   return (
-    <div className="space-y-2">
-      <Button
-        onClick={handleCheckout}
-        disabled={disabled || isPending || items.length === 0}
-        size="lg"
-        className="w-full"
-      >
-        {isPending ? (
-          <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <CreditCard className="mr-2 h-5 w-5" />
-            Pay with Stripe
-          </>
-        )}
-      </Button>
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center">
-          {error}
-        </p>
-      )}
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-8 h-9 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <div className="grid gap-8 lg:grid-cols-5">
+        <div className="h-96 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800 lg:col-span-3" />
+        <div className="h-64 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800 lg:col-span-2" />
+      </div>
     </div>
   );
 }

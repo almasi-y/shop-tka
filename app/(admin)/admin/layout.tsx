@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ExternalLink,
+  Tags,
 } from "lucide-react";
 import { Providers } from "@/components/providers/Providers";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,11 @@ const navItems = [
     label: "Orders",
     href: "/admin/orders",
     icon: ShoppingCart,
+  },
+  {
+    label: "Catalog",
+    href: "/admin/catalog",
+    icon: Tags,
   },
 ];
 

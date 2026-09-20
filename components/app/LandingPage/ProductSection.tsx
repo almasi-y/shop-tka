@@ -5,21 +5,29 @@ import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductFilters } from "./ProductFilters";
 import { ProductGrid } from "../ProductGrid";
+import type { PriceBucket } from "@/components/app/PriceRangeFilter";
 import type {
-  ALL_CATEGORIES_QUERYResult,
-  FILTER_PRODUCTS_BY_NAME_QUERYResult,
+  ALL_BRANDS_QUERY_RESULT,
+  ALL_CATEGORIES_QUERY_RESULT,
+  FILTER_PRODUCTS_BY_NAME_QUERY_RESULT,
 } from "@/sanity.types";
 
 interface ProductSectionProps {
-  categories: ALL_CATEGORIES_QUERYResult;
-  products: FILTER_PRODUCTS_BY_NAME_QUERYResult;
+  categories: ALL_CATEGORIES_QUERY_RESULT;
+  brands: ALL_BRANDS_QUERY_RESULT;
+  priceBuckets: PriceBucket[];
+  products: FILTER_PRODUCTS_BY_NAME_QUERY_RESULT;
   searchQuery: string;
+  categorySlug: string;
 }
 
 export function ProductSection({
   categories,
+  brands,
+  priceBuckets,
   products,
   searchQuery,
+  categorySlug,
 }: ProductSectionProps) {
   const [filtersOpen, setFiltersOpen] = useState(true);
 
@@ -70,7 +78,12 @@ export function ProductSection({
             filtersOpen ? "w-full lg:w-72 lg:opacity-100" : "hidden lg:hidden"
           }`}
         >
-          <ProductFilters categories={categories} />
+          <ProductFilters
+            categories={categories}
+            brands={brands}
+            priceBuckets={priceBuckets}
+            categorySlug={categorySlug}
+          />
         </aside>
 
         {/* Product Grid - expands to full width when filters hidden */}

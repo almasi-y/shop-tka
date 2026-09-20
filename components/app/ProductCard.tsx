@@ -5,18 +5,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-// import { cn, formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { AddToCartButton } from "@/components/app/AddToCartButton";
 import { StockBadge } from "@/components/app/StockBadge";
-import type { FILTER_PRODUCTS_BY_NAME_QUERYResult } from "@/sanity.types";
+import type { FILTER_PRODUCTS_BY_NAME_QUERY_RESULT } from "@/sanity.types";
 
-type Product = FILTER_PRODUCTS_BY_NAME_QUERYResult[number];
+type Product = FILTER_PRODUCTS_BY_NAME_QUERY_RESULT[number];
 
 interface ProductCardProps {
   product: Product;
+  eager?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, eager = false }: ProductCardProps) {
   const [hoveredImageIndex, setHoveredImageIndex] = useState<number | null>(
     null,
   );
@@ -46,8 +47,9 @@ export function ProductCard({ product }: ProductCardProps) {
               src={displayedImageUrl}
               alt={product.name ?? "Product image"}
               fill
-              className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+              className="object-contain p-4 transition-transform duration-500 ease-out group-hover:scale-[1.03]"
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              loading={eager ? "eager" : "lazy"}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-zinc-400">
@@ -106,7 +108,7 @@ export function ProductCard({ product }: ProductCardProps) {
                   src={image.asset.url}
                   alt={`${product.name} - view ${index + 1}`}
                   fill
-                  className="object-cover"
+                  className="object-contain p-1"
                   sizes="100px"
                 />
               )}
@@ -117,6 +119,11 @@ export function ProductCard({ product }: ProductCardProps) {
 
       <CardContent className="flex grow flex-col justify-between gap-2 p-5">
         <Link href={`/products/${product.slug}`} className="block">
+          {product.brand?.title && (
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              {product.brand.title}
+            </p>
+          )}
           <h3 className="line-clamp-2 text-base font-semibold leading-tight text-zinc-900 transition-colors group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300">
             {product.name}
           </h3>
@@ -132,6 +139,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <CardFooter className="mt-auto p-5 pt-0">
         <AddToCartButton
           productId={product._id}
+          slug={product.slug ?? undefined}
           name={product.name ?? "Unknown Product"}
           price={product.price ?? 0}
           image={mainImageUrl ?? undefined}
