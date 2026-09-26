@@ -50,7 +50,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
           <div className="mt-4 space-y-4">
             {product.features.map((feature) => (
               <div key={feature._key} className="flex gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
                 <div>
                   <h3 className="font-medium text-zinc-900 dark:text-zinc-100">
                     {feature.title}

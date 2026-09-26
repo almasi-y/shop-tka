@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { client } from "@/sanity/lib/client";
+import { serverReadClient } from "@/sanity/lib/server-client";
 import { ORDER_STATUS_BY_PAYSTACK_REFERENCE_QUERY } from "@/lib/sanity/queries/orders";
 
 export async function GET(request: Request) {
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Invalid payment reference" }, { status: 400 });
   }
 
-  const order = await client.withConfig({ useCdn: false }).fetch(
+  const order = await serverReadClient.fetch(
     ORDER_STATUS_BY_PAYSTACK_REFERENCE_QUERY,
     { paystackReference: reference },
   );

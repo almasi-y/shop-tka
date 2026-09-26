@@ -18,7 +18,7 @@ export default function StoreError({
 
   return (
     <div className="mx-auto flex min-h-[50vh] max-w-xl flex-col items-center justify-center px-4 text-center">
-      <AlertTriangle className="h-12 w-12 text-amber-500" />
+      <AlertTriangle className="h-12 w-12 text-brand" />
       <h1 className="mt-4 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
         Something went wrong
       </h1>

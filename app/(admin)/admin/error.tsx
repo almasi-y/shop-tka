@@ -17,7 +17,7 @@ export default function AdminError({
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-      <AlertTriangle className="h-12 w-12 text-amber-500" />
+      <AlertTriangle className="h-12 w-12 text-brand" />
       <h1 className="mt-4 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
         Admin page unavailable
       </h1>

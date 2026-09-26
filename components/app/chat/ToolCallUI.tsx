@@ -55,27 +55,27 @@ export function ToolCallUI({ toolPart, closeChat }: ToolCallUIProps) {
     <div className="space-y-2">
       {/* Tool status indicator */}
       <div className="flex gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-          <ToolIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 dark:bg-brand/20">
+          <ToolIcon className="h-4 w-4 text-brand dark:text-brand-light" />
         </div>
         <div
           className={`flex items-center gap-3 rounded-xl px-4 py-2 text-sm ${
             isComplete
               ? "bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
-              : "bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+              : "bg-brand/10 border border-brand/20 dark:bg-brand/20 dark:border-brand/60"
           }`}
         >
           {isComplete ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           ) : (
-            <Loader2 className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-spin shrink-0" />
+            <Loader2 className="h-4 w-4 text-brand dark:text-brand-light animate-spin shrink-0" />
           )}
           <div className="flex flex-col">
             <span
               className={`font-medium ${
                 isComplete
                   ? "text-emerald-700 dark:text-emerald-300"
-                  : "text-amber-700 dark:text-amber-300"
+                  : "text-brand dark:text-brand-light"
               }`}
             >
               {isComplete ? `${displayName} complete` : `${displayName}...`}

@@ -88,7 +88,7 @@ export function CheckoutClient() {
 
             {/* Stock Issues Warning */}
             {hasStockIssues && !isLoading && (
-              <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+              <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-brand/20 bg-brand/10 px-4 py-3 text-sm text-brand dark:border-brand/60 dark:bg-brand/20 dark:text-brand-light">
                 <AlertTriangle className="h-5 w-5 shrink-0" />
                 <span>
                   Some items have stock issues. Please update your cart before
@@ -153,7 +153,7 @@ export function CheckoutClient() {
                           </p>
                         )}
                         {stockInfo?.exceedsStock && !stockInfo.isOutOfStock && (
-                          <p className="mt-1 text-sm font-medium text-amber-600">
+                          <p className="mt-1 text-sm font-medium text-brand">
                             Only {stockInfo.currentStock} available
                           </p>
                         )}

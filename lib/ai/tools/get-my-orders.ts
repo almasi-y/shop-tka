@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { sanityFetch } from "@/sanity/lib/live";
+import { serverReadClient } from "@/sanity/lib/server-client";
 import { ORDERS_BY_USER_QUERY } from "@/lib/sanity/queries/orders";
 import {
   ORDER_STATUS_VALUES,
@@ -54,9 +54,8 @@ export function createGetMyOrdersTool(userId: string | null) {
     inputSchema: getMyOrdersSchema,
     execute: async ({ status }) => {
       try {
-        const { data: orders } = await sanityFetch({
-          query: ORDERS_BY_USER_QUERY,
-          params: { clerkUserId: userId },
+        const orders = await serverReadClient.fetch(ORDERS_BY_USER_QUERY, {
+          clerkUserId: userId,
         });
 
         // Filter by status if provided

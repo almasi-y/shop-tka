@@ -39,7 +39,7 @@ export function BrandFilter({
                       : [...selectedSlugs, brand.slug as string],
                   )
                 }
-                className="h-4 w-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800"
+                className="h-4 w-4 rounded border-zinc-300 text-brand focus:ring-brand dark:border-zinc-600 dark:bg-zinc-800"
               />
               <span>{brand.title}</span>
             </label>

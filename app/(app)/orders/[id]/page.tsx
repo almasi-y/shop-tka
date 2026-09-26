@@ -4,13 +4,13 @@ import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { ArrowLeft, CreditCard, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { sanityFetch } from "@/sanity/lib/live";
+import { serverReadClient } from "@/sanity/lib/server-client";
 import { ORDER_BY_ID_QUERY } from "@/lib/sanity/queries/orders";
 import { getOrderStatus } from "@/lib/constants/orderStatus";
 import { formatPrice, formatDate } from "@/lib/utils";
 
 export const metadata = {
-  title: "Order Details | Robotics Store",
+  title: "Order Details | TechKidz Africa",
   description: "View your order details",
 };
 
@@ -22,10 +22,7 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
   const { id } = await params;
   const { userId } = await auth.protect();
 
-  const { data: order } = await sanityFetch({
-    query: ORDER_BY_ID_QUERY,
-    params: { id },
-  });
+  const order = await serverReadClient.fetch(ORDER_BY_ID_QUERY, { id });
 
   // Verify order exists and belongs to current user
   if (!order || order.clerkUserId !== userId) {

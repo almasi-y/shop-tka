@@ -32,7 +32,7 @@ export function PriceRangeFilter({
         className={cn(
           "w-full rounded-md px-2 py-1.5 text-left text-sm",
           currentMin === 0 && currentMax === 0
-            ? "bg-amber-50 font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+            ? "bg-brand/10 font-medium text-brand dark:bg-brand/20 dark:text-brand-light"
             : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900",
         )}
       >
@@ -48,7 +48,7 @@ export function PriceRangeFilter({
             className={cn(
               "w-full rounded-md px-2 py-1.5 text-left text-sm",
               active
-                ? "bg-amber-50 font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                ? "bg-brand/10 font-medium text-brand dark:bg-brand/20 dark:text-brand-light"
                 : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900",
             )}
           >

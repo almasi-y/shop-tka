@@ -61,7 +61,10 @@ export function AddToCartButton({
   // Not in cart - show Add to Basket button
   if (quantityInCart === 0) {
     return (
-      <Button onClick={handleAdd} className={cn("h-11 w-full", className)}>
+      <Button
+        onClick={handleAdd}
+        className={cn("h-11 w-full max-sm:[&_svg]:hidden", className)}
+      >
         <ShoppingBag className="mr-2 h-4 w-4" />
         Add to Basket
       </Button>
@@ -72,25 +75,25 @@ export function AddToCartButton({
   return (
     <div
       className={cn(
-        "flex h-11 w-full items-center rounded-md border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900",
+        "grid h-11 w-full grid-cols-[2.75rem_1fr_2.75rem] items-center overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900",
         className,
       )}
     >
       <Button
         variant="ghost"
         size="icon"
-        className="h-full flex-1 rounded-r-none"
+        className="h-full w-full rounded-r-none"
         onClick={handleDecrement}
       >
         <Minus className="h-4 w-4" />
       </Button>
-      <span className="flex-1 text-center text-sm font-semibold tabular-nums">
+      <span className="w-full text-center text-sm font-semibold tabular-nums">
         {quantityInCart}
       </span>
       <Button
         variant="ghost"
         size="icon"
-        className="h-full flex-1 rounded-l-none disabled:opacity-20"
+        className="h-full w-full rounded-l-none disabled:opacity-20"
         onClick={handleAdd}
         disabled={isAtMax}
       >

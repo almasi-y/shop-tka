@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn, formatPrice } from "@/lib/utils";
 import { AddToCartButton } from "@/components/app/AddToCartButton";
 import { StockBadge } from "@/components/app/StockBadge";
@@ -30,25 +29,19 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
       : mainImageUrl;
 
   const stock = product.stock ?? 0;
-  const isOutOfStock = stock <= 0;
   const hasMultipleImages = images.length > 1;
 
   return (
-    <Card className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-sm ring-1 ring-zinc-950/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-950/10 dark:bg-zinc-900 dark:ring-white/10 dark:hover:shadow-zinc-950/50">
+    <Card className="group relative flex h-full flex-col gap-0 overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-sm ring-1 ring-zinc-950/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-950/10 dark:bg-zinc-900 dark:ring-white/10 dark:hover:shadow-zinc-950/50">
       <Link href={`/products/${product.slug}`} className="block">
-        <div
-          className={cn(
-            "relative overflow-hidden bg-linear-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900",
-            hasMultipleImages ? "aspect-square" : "aspect-4/5",
-          )}
-        >
+        <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
           {displayedImageUrl ? (
             <Image
               src={displayedImageUrl}
               alt={product.name ?? "Product image"}
               fill
-              className="object-contain p-4 transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              className="object-contain p-3 transition-transform duration-500 ease-out group-hover:scale-[1.03] sm:p-4"
+              sizes="(max-width: 1023px) 50vw, 25vw"
               loading={eager ? "eager" : "lazy"}
             />
           ) : (
@@ -71,31 +64,18 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           )}
           {/* Gradient overlay for text contrast */}
           <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          {isOutOfStock && (
-            <Badge
-              variant="destructive"
-              className="absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-medium shadow-lg"
-            >
-              Out of Stock
-            </Badge>
-          )}
-          {product.category && (
-            <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow-sm backdrop-blur-sm dark:bg-zinc-900/90 dark:text-zinc-300">
-              {product.category.title}
-            </span>
-          )}
         </div>
       </Link>
 
-      {/* Thumbnail strip - only show if multiple images */}
+      {/* Keep alternate views available on larger screens without lengthening mobile cards. */}
       {hasMultipleImages && (
-        <div className="flex gap-2 border-t border-zinc-100 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+        <div className="hidden gap-2 border-t border-zinc-100 bg-zinc-50/50 p-2 md:flex dark:border-zinc-800 dark:bg-zinc-800/50">
           {images.map((image, index) => (
             <button
               key={image._key ?? index}
               type="button"
               className={cn(
-                "relative h-14 flex-1 overflow-hidden rounded-lg transition-all duration-200",
+                "relative h-11 flex-1 overflow-hidden rounded-lg transition-all duration-200",
                 hoveredImageIndex === index
                   ? "ring-2 ring-zinc-900 ring-offset-2 dark:ring-white dark:ring-offset-zinc-900"
                   : "opacity-50 hover:opacity-100",
@@ -117,26 +97,30 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
         </div>
       )}
 
-      <CardContent className="flex grow flex-col justify-between gap-2 p-5">
+      <CardContent className="flex grow flex-col justify-between gap-3 p-3 sm:p-4">
         <Link href={`/products/${product.slug}`} className="block">
           {product.brand?.title && (
-            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <p className="mb-1 line-clamp-1 text-[0.65rem] font-medium uppercase tracking-wide text-zinc-500 sm:text-xs dark:text-zinc-400">
               {product.brand.title}
             </p>
           )}
-          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-zinc-900 transition-colors group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300">
+          <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-zinc-900 transition-colors group-hover:text-zinc-600 sm:text-base dark:text-zinc-100 dark:group-hover:text-zinc-300">
             {product.name}
           </h3>
         </Link>
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+        <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+          <p className="text-base font-bold tracking-tight text-zinc-900 sm:text-xl dark:text-white">
             {formatPrice(product.price)}
           </p>
-          <StockBadge productId={product._id} stock={stock} />
+          <StockBadge
+            productId={product._id}
+            stock={stock}
+            className="max-w-full text-[0.65rem] sm:text-xs"
+          />
         </div>
       </CardContent>
 
-      <CardFooter className="mt-auto p-5 pt-0">
+      <CardFooter className="mt-auto border-t-0 bg-transparent p-3 pt-0 sm:p-4 sm:pt-0">
         <AddToCartButton
           productId={product._id}
           slug={product.slug ?? undefined}
@@ -144,6 +128,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           price={product.price ?? 0}
           image={mainImageUrl ?? undefined}
           stock={stock}
+          className="h-10 sm:h-11"
         />
       </CardFooter>
     </Card>

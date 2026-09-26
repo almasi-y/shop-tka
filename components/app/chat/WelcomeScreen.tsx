@@ -23,8 +23,8 @@ export function WelcomeScreen({
 }: WelcomeScreenProps) {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center px-4">
-      <div className="rounded-full bg-amber-100 p-4 dark:bg-amber-900/30">
-        <Sparkles className="h-8 w-8 text-amber-500" />
+      <div className="rounded-full bg-brand/10 p-4 dark:bg-brand/20">
+        <Sparkles className="h-8 w-8 text-brand" />
       </div>
       <h3 className="mt-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
         How can I help you today?
@@ -47,7 +47,7 @@ export function WelcomeScreen({
               key={suggestion}
               type="button"
               onClick={() => onSuggestionClick({ text: suggestion })}
-              className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 hover:border-amber-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:border-amber-600"
+              className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 hover:border-brand/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:border-brand/60"
             >
               {suggestion}
             </button>
@@ -68,7 +68,7 @@ export function WelcomeScreen({
                 key={suggestion}
                 type="button"
                 onClick={() => onSuggestionClick({ text: suggestion })}
-                className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1.5 text-sm text-brand transition-colors hover:bg-brand/10 dark:border-brand/60 dark:bg-brand/20 dark:text-brand-light dark:hover:bg-brand/30"
               >
                 {suggestion}
               </button>

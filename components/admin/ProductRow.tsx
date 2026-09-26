@@ -113,7 +113,7 @@ function ProductRowContent(handle: DocumentHandle) {
                 {data.name || "Untitled Product"}
               </span>
               {data.featured && (
-                <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400 sm:hidden" />
+                <Star className="h-3.5 w-3.5 shrink-0 fill-brand text-brand sm:hidden" />
               )}
               {data.slug && (
                 <button
@@ -134,7 +134,7 @@ function ProductRowContent(handle: DocumentHandle) {
               <div className="mt-1 flex items-center gap-1 sm:hidden">
                 <Badge
                   variant="outline"
-                  className="h-5 gap-1 border-orange-300 bg-orange-50 px-1.5 text-[10px] font-medium text-orange-600 dark:border-orange-500/50 dark:bg-orange-950/50 dark:text-orange-400"
+                  className="h-5 gap-1 border-brand/30 bg-brand/10 px-1.5 text-[10px] font-medium text-brand dark:border-brand/50 dark:bg-brand/20 dark:text-brand-light"
                 >
                   <CircleAlert className="h-3 w-3" />
                   Draft
@@ -163,7 +163,7 @@ function ProductRowContent(handle: DocumentHandle) {
               {lowStock && (
                 <Badge
                   variant="secondary"
-                  className="h-5 bg-amber-100 px-1.5 text-[10px] text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                  className="h-5 bg-brand/10 px-1.5 text-[10px] text-brand dark:bg-brand/20 dark:text-brand-light"
                 >
                   Low
                 </Badge>
@@ -194,7 +194,7 @@ function ProductRowContent(handle: DocumentHandle) {
           {lowStock && (
             <Badge
               variant="secondary"
-              className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+              className="bg-brand/10 text-brand dark:bg-brand/20 dark:text-brand-light"
             >
               Low
             </Badge>

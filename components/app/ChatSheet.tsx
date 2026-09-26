@@ -72,7 +72,7 @@ export function ChatSheet() {
         <header className="shrink-0 border-b border-zinc-200 dark:border-zinc-800">
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex items-center gap-2 font-semibold">
-              <Sparkles className="h-5 w-5 text-amber-500" />
+              <Sparkles className="h-5 w-5 text-brand" />
               Shopping Assistant
             </div>
             <Button variant="ghost" size="icon" onClick={closeChat}>
@@ -125,14 +125,14 @@ export function ChatSheet() {
               {/* Loading indicator */}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-                    <Bot className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 dark:bg-brand/20">
+                    <Bot className="h-4 w-4 text-brand dark:text-brand-light" />
                   </div>
                   <div className="flex items-center gap-2 rounded-2xl bg-zinc-100 px-4 py-2 dark:bg-zinc-800">
                     <div className="flex gap-1">
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-amber-400 [animation-delay:-0.3s]" />
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-amber-400 [animation-delay:-0.15s]" />
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-amber-400" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-brand/70 [animation-delay:-0.3s]" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-brand/70 [animation-delay:-0.15s]" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-brand/70" />
                     </div>
                   </div>
                 </div>

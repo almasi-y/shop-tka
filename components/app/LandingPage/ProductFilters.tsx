@@ -20,6 +20,7 @@ import {
   type PriceBucket,
 } from "@/components/app/PriceRangeFilter";
 import { SORT_OPTIONS } from "@/lib/constants/filters";
+import { cn } from "@/lib/utils";
 import type {
   ALL_BRANDS_QUERY_RESULT,
   ALL_CATEGORIES_QUERY_RESULT,
@@ -30,6 +31,7 @@ interface ProductFiltersProps {
   brands: ALL_BRANDS_QUERY_RESULT;
   priceBuckets: PriceBucket[];
   categorySlug: string;
+  className?: string;
 }
 
 function FilterLabel({
@@ -48,7 +50,7 @@ function FilterLabel({
       <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
         {children}
         {isActive && (
-          <Badge className="ml-2 h-5 bg-amber-500 px-1.5 text-xs text-white hover:bg-amber-500">
+          <Badge className="ml-2 h-5 bg-brand px-1.5 text-xs text-white hover:bg-brand">
             Active
           </Badge>
         )}
@@ -72,6 +74,7 @@ export function ProductFilters({
   brands,
   priceBuckets,
   categorySlug,
+  className,
 }: ProductFiltersProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -134,10 +137,15 @@ export function ProductFilters({
   };
 
   return (
-    <div className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+    <div
+      className={cn(
+        "space-y-6 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950",
+        className,
+      )}
+    >
       {activeFilterCount > 0 && (
-        <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950">
-          <p className="mb-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+        <div className="rounded-lg border-2 border-brand/30 bg-brand/10 p-3 dark:border-brand/60 dark:bg-brand/20">
+          <p className="mb-2 text-sm font-medium text-brand dark:text-brand-light">
             {activeFilterCount} {activeFilterCount === 1 ? "filter" : "filters"} applied
           </p>
           <Button
@@ -145,7 +153,7 @@ export function ProductFilters({
             onClick={() =>
               router.push(categorySlug ? "/" : pathname, { scroll: false })
             }
-            className="w-full bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
+            className="w-full bg-brand text-white hover:bg-brand dark:bg-brand dark:hover:bg-brand"
           >
             <X className="mr-2 h-4 w-4" />
             Clear All Filters
@@ -173,7 +181,7 @@ export function ProductFilters({
             name="search"
             placeholder="Search products..."
             defaultValue={currentSearch}
-            className={isSearchActive ? "border-amber-500 ring-1 ring-amber-500" : ""}
+            className={isSearchActive ? "border-brand ring-1 ring-brand" : ""}
           />
           <Button type="submit" size="sm">
             Search
@@ -249,12 +257,12 @@ export function ProductFilters({
           onChange={(event) =>
             updateParams({ inStock: event.target.checked ? "true" : null })
           }
-          className="h-5 w-5 rounded border-zinc-300 text-amber-500 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800"
+          className="h-5 w-5 rounded border-zinc-300 text-brand focus:ring-brand dark:border-zinc-600 dark:bg-zinc-800"
         />
         <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Show only in-stock
           {isInStockActive && (
-            <Badge className="ml-2 h-5 bg-amber-500 px-1.5 text-xs text-white hover:bg-amber-500">
+            <Badge className="ml-2 h-5 bg-brand px-1.5 text-xs text-white hover:bg-brand">
               Active
             </Badge>
           )}

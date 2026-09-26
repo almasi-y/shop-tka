@@ -3,23 +3,22 @@ import { auth } from "@clerk/nextjs/server";
 import { Package, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { sanityFetch } from "@/sanity/lib/live";
+import { serverReadClient } from "@/sanity/lib/server-client";
 import { ORDERS_BY_USER_QUERY } from "@/lib/sanity/queries/orders";
 import { getOrderStatus } from "@/lib/constants/orderStatus";
 import { formatPrice, formatDate, formatOrderNumber } from "@/lib/utils";
 import { StackedProductImages } from "@/components/app/StackedProductImages";
 
 export const metadata = {
-  title: "Your Orders | Robotics Store",
+  title: "Your Orders | TechKidz Africa",
   description: "View your order history",
 };
 
 export default async function OrdersPage() {
   const { userId } = await auth.protect();
 
-  const { data: orders } = await sanityFetch({
-    query: ORDERS_BY_USER_QUERY,
-    params: { clerkUserId: userId },
+  const orders = await serverReadClient.fetch(ORDERS_BY_USER_QUERY, {
+    clerkUserId: userId,
   });
 
   if (orders.length === 0) {

@@ -2,7 +2,7 @@ import { SuccessClient } from "./SuccessClient";
 import { auth } from "@clerk/nextjs/server";
 
 export const metadata = {
-  title: "Payment Confirmation | Robotics Store",
+  title: "Payment Confirmation | TechKidz Africa",
   description: "Confirm your Paystack payment",
 };
 

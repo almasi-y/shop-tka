@@ -67,7 +67,7 @@ export function SuccessClient({ reference }: SuccessClientProps) {
 
   const content = {
     checking: {
-      icon: <Loader2 className="mx-auto h-16 w-16 animate-spin text-amber-500" />,
+      icon: <Loader2 className="mx-auto h-16 w-16 animate-spin text-brand" />,
       title: "Confirming Payment",
       message: "Paystack is confirming your payment and creating your order.",
     },
@@ -77,7 +77,7 @@ export function SuccessClient({ reference }: SuccessClientProps) {
       message: "Your payment was confirmed and your order is now available.",
     },
     pending: {
-      icon: <Loader2 className="mx-auto h-16 w-16 text-amber-500" />,
+      icon: <Loader2 className="mx-auto h-16 w-16 text-brand" />,
       title: "Confirmation Pending",
       message:
         "Payment confirmation is taking longer than expected. Keep your cart for now and check your orders shortly.",

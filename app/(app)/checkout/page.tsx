@@ -2,7 +2,7 @@ import { CheckoutClient } from "./CheckoutClient";
 import { auth } from "@clerk/nextjs/server";
 
 export const metadata = {
-  title: "Checkout | Robotics Store",
+  title: "Checkout | TechKidz Africa",
   description: "Complete your purchase",
 };
 

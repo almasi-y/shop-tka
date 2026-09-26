@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  allowedDevOrigins: ["unfacetious-availingly-georgie.ngrok-free.dev"],
   images: {
     remotePatterns: [
       {

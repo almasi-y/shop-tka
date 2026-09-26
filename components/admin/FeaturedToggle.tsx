@@ -31,7 +31,7 @@ function FeaturedToggleContent(handle: FeaturedToggleProps) {
         className={cn(
           "h-4 w-4 transition-colors",
           isFeatured
-            ? "fill-amber-400 text-amber-400"
+            ? "fill-brand text-brand"
             : "text-zinc-300 dark:text-zinc-600",
         )}
       />
