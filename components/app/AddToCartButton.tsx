@@ -2,6 +2,7 @@
 
 import { Minus, Plus, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { RestockNotificationButton } from "@/components/app/RestockNotificationButton";
 import { Button } from "@/components/ui/button";
 import { useCartActions, useCartItem } from "@/lib/store/cart-store-provider";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ interface AddToCartButtonProps {
   image?: string;
   stock: number;
   className?: string;
+  enableRestockNotification?: boolean;
 }
 
 export function AddToCartButton({
@@ -24,6 +26,7 @@ export function AddToCartButton({
   image,
   stock,
   className,
+  enableRestockNotification = false,
 }: AddToCartButtonProps) {
   const { addItem, updateQuantity } = useCartActions();
   const cartItem = useCartItem(productId);
@@ -47,6 +50,16 @@ export function AddToCartButton({
 
   // Out of stock
   if (isOutOfStock) {
+    if (enableRestockNotification) {
+      return (
+        <RestockNotificationButton
+          productId={productId}
+          name={name}
+          className={className}
+        />
+      );
+    }
+
     return (
       <Button
         disabled

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { sanityFetch } from "@/sanity/lib/live";
 import {
   FEATURED_PRODUCTS_QUERY,
@@ -13,12 +12,10 @@ import {
   ALL_BRANDS_QUERY,
   BRANDS_BY_SLUGS_QUERY,
 } from "@/lib/sanity/queries/brands";
+import { ACTIVE_PROMOTIONS_QUERY } from "@/lib/sanity/queries/promotions";
 import { collectCategoryIds } from "@/lib/sanity/category-tree";
 import { client } from "@/sanity/lib/client";
 import { ProductSection } from "@/components/app/LandingPage/ProductSection";
-import { CategoryTiles } from "@/components/app/LandingPage/CategoryTiles";
-import { FeaturedCarousel } from "@/components/app/LandingPage/FeaturedCarousel";
-import { FeaturedCarouselSkeleton } from "@/components/app/LandingPage/FeaturedCarouselSkeleton";
 import type {
   ALL_CATEGORIES_QUERY_RESULT,
   ALL_BRANDS_QUERY_RESULT,
@@ -126,56 +123,34 @@ export async function CatalogPage({
   }
 
   const sharedParams = { searchQuery, categoryIds, brandIds, inStock };
-  const [filteredResult, featuredResult, priceResult] = await Promise.all([
-    sanityFetch({
-      query: getQuery(),
-      params: { ...sharedParams, minPrice, maxPrice },
-    }),
-    sanityFetch({ query: FEATURED_PRODUCTS_QUERY }),
-    sanityFetch({ query: PRODUCT_PRICE_FACET_QUERY, params: sharedParams }),
-  ]);
+  const [filteredResult, featuredResult, priceResult, promotionsResult] =
+    await Promise.all([
+      sanityFetch({
+        query: getQuery(),
+        params: { ...sharedParams, minPrice, maxPrice },
+      }),
+      sanityFetch({ query: FEATURED_PRODUCTS_QUERY }),
+      sanityFetch({ query: PRODUCT_PRICE_FACET_QUERY, params: sharedParams }),
+      sanityFetch({ query: ACTIVE_PROMOTIONS_QUERY, stega: false }),
+    ]);
   const filteredProducts = filteredResult.data;
   const featuredProducts = featuredResult.data;
+  const promotions = promotionsResult.data;
   const priceBuckets = createPriceBuckets(priceResult.data);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      {/* Featured Products Carousel */}
-      {featuredProducts.length > 0 && (
-        <Suspense fallback={<FeaturedCarouselSkeleton />}>
-          <FeaturedCarousel products={featuredProducts} />
-        </Suspense>
-      )}
-
-      {/* Page Banner */}
-      <div className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Shop {selectedCategory?.title ?? "All Products"}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Robotics components, modules, tools, and educational kits
-          </p>
-        </div>
-
-        {/* Category Tiles - Full width */}
-        <div className="mt-6">
-          <CategoryTiles
-            categories={categories}
-            activeCategory={categorySlug || undefined}
-          />
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <ProductSection
-            categories={categories}
-            brands={allBrands}
-            priceBuckets={priceBuckets}
-            products={filteredProducts as FILTER_PRODUCTS_BY_NAME_QUERY_RESULT}
-            searchQuery={searchQuery}
-            categorySlug={categorySlug}
-          />
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <ProductSection
+          categories={categories}
+          brands={allBrands}
+          priceBuckets={priceBuckets}
+          products={filteredProducts as FILTER_PRODUCTS_BY_NAME_QUERY_RESULT}
+          featuredProducts={featuredProducts}
+          promotions={promotions}
+          searchQuery={searchQuery}
+          categorySlug={categorySlug}
+        />
       </div>
     </div>
   );

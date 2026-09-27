@@ -1,5 +1,6 @@
 "use client";
 
+import { SignInButton, useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
@@ -17,6 +18,7 @@ export function CartSummary({ hasStockIssues = false }: CartSummaryProps) {
   const totalPrice = useTotalPrice();
   const totalItems = useTotalItems();
   const { closeCart } = useCartActions();
+  const { isLoaded, isSignedIn } = useAuth();
 
   if (totalItems === 0) return null;
 
@@ -34,7 +36,11 @@ export function CartSummary({ hasStockIssues = false }: CartSummaryProps) {
           <Button disabled className="w-full">
             Resolve stock issues to checkout
           </Button>
-        ) : (
+        ) : !isLoaded ? (
+          <Button disabled className="w-full">
+            Checkout
+          </Button>
+        ) : isSignedIn ? (
           <Link
             href="/checkout"
             onClick={() => closeCart()}
@@ -42,6 +48,15 @@ export function CartSummary({ hasStockIssues = false }: CartSummaryProps) {
           >
             Checkout
           </Link>
+        ) : (
+          <SignInButton
+            mode="modal"
+            withSignUp
+            forceRedirectUrl="/checkout"
+            signUpForceRedirectUrl="/checkout"
+          >
+            <Button className="w-full">Checkout</Button>
+          </SignInButton>
         )}
       </div>
       <div className="mt-3 text-center">

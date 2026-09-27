@@ -1,4 +1,4 @@
-import { CategoryTilesSkeleton } from "@/components/app/LandingPage/CategoryTilesSkeleton";
+import { FeaturedCarouselSkeleton } from "@/components/app/LandingPage/FeaturedCarouselSkeleton";
 import { ProductFiltersSkeleton } from "@/components/app/LandingPage/ProductFiltersSkeleton";
 import { ProductGridSkeleton } from "@/components/app/ProductGridSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,36 +6,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function HomeLoading() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      {/* Page Banner */}
-      <div className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="mt-2 h-4 w-56" />
-        </div>
+      <div className="mx-auto grid max-w-7xl items-start gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-8 lg:px-8">
+        <aside className="hidden lg:block">
+          <ProductFiltersSkeleton />
+        </aside>
 
-        {/* Category Tiles */}
-        <div className="mt-6">
-          <CategoryTilesSkeleton />
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Sidebar Filters */}
-          <aside className="w-full shrink-0 lg:w-72">
-            <ProductFiltersSkeleton />
-          </aside>
-
-          {/* Product Grid */}
-          <main className="flex-1">
-            {/* Results count */}
-            <div className="mb-6 flex items-center justify-between">
-              <Skeleton className="h-4 w-32" />
-            </div>
-
+        <main className="min-w-0 space-y-6">
+          <div className="overflow-hidden rounded-xl">
+            <FeaturedCarouselSkeleton />
+          </div>
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-9 w-24 lg:hidden" />
+          </div>
+          <div>
             <ProductGridSkeleton />
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

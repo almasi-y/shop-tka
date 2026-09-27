@@ -53,7 +53,7 @@ export function FeaturedCarousel({ products }: FeaturedCarouselProps) {
   }
 
   return (
-    <div className="relative w-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="relative w-full bg-brand-blue">
       <Carousel
         setApi={setApi}
         opts={{
@@ -118,7 +118,7 @@ function FeaturedSlide({ product, eager = false }: FeaturedSlideProps) {
   const mainImage = product.images?.[0]?.asset?.url;
 
   return (
-    <div className="flex min-h-[400px] flex-col md:min-h-[450px] md:flex-row lg:min-h-[500px]">
+    <div className="flex flex-col md:h-[400px] md:flex-row lg:h-[420px]">
       {/* Image Section - Left side (60% on desktop) */}
       <div className="relative h-64 w-full bg-zinc-50 md:h-auto md:w-3/5 dark:bg-zinc-900">
         {mainImage ? (
@@ -135,7 +135,6 @@ function FeaturedSlide({ product, eager = false }: FeaturedSlideProps) {
             <span className="text-zinc-500">No image</span>
           </div>
         )}
-
       </div>
 
       {/* Content Section - Right side (40% on desktop) */}
@@ -156,7 +155,7 @@ function FeaturedSlide({ product, eager = false }: FeaturedSlideProps) {
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
-            href={`/products/${product.slug}`}
+            href={`/products/${encodeURIComponent(product._id)}`}
             className={cn(
               buttonVariants({ size: "lg" }),
               "bg-white text-zinc-900 hover:bg-zinc-100",

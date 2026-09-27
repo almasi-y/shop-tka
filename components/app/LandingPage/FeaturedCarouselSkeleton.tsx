@@ -2,8 +2,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function FeaturedCarouselSkeleton() {
   return (
-    <div className="relative w-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-      <div className="flex min-h-[400px] flex-col md:min-h-[450px] md:flex-row lg:min-h-[500px]">
+    <div className="relative w-full bg-brand-blue">
+      <div className="flex flex-col md:h-[400px] md:flex-row lg:h-[420px]">
         {/* Image Section Skeleton */}
         <div className="relative h-64 w-full md:h-auto md:w-3/5">
           <Skeleton className="h-full w-full rounded-none bg-zinc-800" />

@@ -75,6 +75,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
           price={product.price ?? 0}
           image={imageUrl ?? undefined}
           stock={product.stock ?? 0}
+          enableRestockNotification
         />
         <AskAISimilarButton
           productName={product.name ?? "this product"}

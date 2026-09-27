@@ -10,6 +10,8 @@ interface ProductPageProps {
   }>;
 }
 
+const CANONICAL_PRODUCT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
 
@@ -22,7 +24,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  if (product.slug && product.slug !== slug) {
+  if (
+    product.slug &&
+    product.slug !== slug &&
+    CANONICAL_PRODUCT_SLUG.test(product.slug)
+  ) {
     redirect(`/products/${product.slug}`);
   }
 

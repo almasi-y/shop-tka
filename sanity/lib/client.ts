@@ -6,7 +6,8 @@ export const client = createClient({
   projectId,
   dataset,
   apiVersion,
-  useCdn: true, // Set to false if statically generating pages, using ISR or tag-based revalidation
+  // Keep production on the faster CDN, but bypass apicdn.sanity.io locally.
+  useCdn: process.env.NODE_ENV === 'production',
 })
 
 export const writeClient = createClient({

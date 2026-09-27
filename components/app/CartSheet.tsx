@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { CartItem } from "@/components/app/CartItem";
 import { CartSummary } from "@/components/app/CartSummary";
 import { useCartItems, useCartIsOpen, useCartActions } from "@/lib/store/cart-store-provider";
@@ -10,6 +12,11 @@ export function CartSheet() {
   const isOpen = useCartIsOpen();
   const { closeCart } = useCartActions();
   const { stockMap, hasStockIssues } = useCartStock(items);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    closeCart();
+  }, [closeCart, pathname]);
 
   if (!isOpen) return null;
 

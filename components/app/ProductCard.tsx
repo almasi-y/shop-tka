@@ -30,17 +30,18 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
 
   const stock = product.stock ?? 0;
   const hasMultipleImages = images.length > 1;
+  const productHref = `/products/${encodeURIComponent(product._id)}`;
 
   return (
-    <Card className="group relative flex h-full flex-col gap-0 overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-sm ring-1 ring-zinc-950/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-950/10 dark:bg-zinc-900 dark:ring-white/10 dark:hover:shadow-zinc-950/50">
-      <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900">
+    <Card className="relative flex h-full flex-col gap-0 overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+      <Link href={productHref} className="block">
+        <div className="relative aspect-4/3 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
           {displayedImageUrl ? (
             <Image
               src={displayedImageUrl}
               alt={product.name ?? "Product image"}
               fill
-              className="object-contain p-3 transition-transform duration-500 ease-out group-hover:scale-[1.03] sm:p-4"
+              className="object-contain p-3 sm:p-4"
               sizes="(max-width: 1023px) 50vw, 25vw"
               loading={eager ? "eager" : "lazy"}
             />
@@ -62,8 +63,6 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               </svg>
             </div>
           )}
-          {/* Gradient overlay for text contrast */}
-          <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>
       </Link>
 
@@ -98,13 +97,13 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
       )}
 
       <CardContent className="flex grow flex-col justify-between gap-3 p-3 sm:p-4">
-        <Link href={`/products/${product.slug}`} className="block">
+        <Link href={productHref} className="block">
           {product.brand?.title && (
             <p className="mb-1 line-clamp-1 text-[0.65rem] font-medium uppercase tracking-wide text-zinc-500 sm:text-xs dark:text-zinc-400">
               {product.brand.title}
             </p>
           )}
-          <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-zinc-900 transition-colors group-hover:text-zinc-600 sm:text-base dark:text-zinc-100 dark:group-hover:text-zinc-300">
+          <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-zinc-900 sm:text-base dark:text-zinc-100">
             {product.name}
           </h3>
         </Link>

@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CategorySidebar } from "@/components/app/CategorySidebar";
@@ -90,13 +89,11 @@ export function ProductFilters({
   const currentMaxPrice = Number(searchParams.get("maxPrice")) || 0;
   const currentInStock = searchParams.get("inStock") === "true";
 
-  const isSearchActive = Boolean(currentSearch);
   const isCategoryActive = Boolean(currentCategory);
   const isBrandActive = currentBrands.length > 0;
   const isPriceActive = currentMinPrice > 0 || currentMaxPrice > 0;
   const isInStockActive = currentInStock;
   const activeFilterCount = [
-    isSearchActive,
     isCategoryActive,
     isBrandActive,
     isPriceActive,
@@ -136,6 +133,13 @@ export function ProductFilters({
     updateParams({ [key]: null });
   };
 
+  const clearAllFilters = () => {
+    const params = new URLSearchParams();
+    if (currentSearch) params.set("q", currentSearch);
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/", { scroll: false });
+  };
+
   return (
     <div
       className={cn(
@@ -150,9 +154,7 @@ export function ProductFilters({
           </p>
           <Button
             size="sm"
-            onClick={() =>
-              router.push(categorySlug ? "/" : pathname, { scroll: false })
-            }
+            onClick={clearAllFilters}
             className="w-full bg-brand text-white hover:bg-brand dark:bg-brand dark:hover:bg-brand"
           >
             <X className="mr-2 h-4 w-4" />
@@ -160,34 +162,6 @@ export function ProductFilters({
           </Button>
         </div>
       )}
-
-      <div>
-        <FilterLabel
-          isActive={isSearchActive}
-          filterKey="q"
-          onClear={() => clearSingleFilter("q")}
-        >
-          Search
-        </FilterLabel>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            const value = new FormData(event.currentTarget).get("search");
-            updateParams({ q: typeof value === "string" ? value : null });
-          }}
-          className="flex gap-2"
-        >
-          <Input
-            name="search"
-            placeholder="Search products..."
-            defaultValue={currentSearch}
-            className={isSearchActive ? "border-brand ring-1 ring-brand" : ""}
-          />
-          <Button type="submit" size="sm">
-            Search
-          </Button>
-        </form>
-      </div>
 
       <div>
         <FilterLabel

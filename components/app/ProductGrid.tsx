@@ -1,5 +1,6 @@
 import { PackageSearch } from "lucide-react";
 import { ProductCard } from "./ProductCard";
+import { HoverEffect } from "@/components/ui/card-hover-effect";
 import {
   Empty,
   EmptyDescription,
@@ -34,16 +35,14 @@ export function ProductGrid({ products }: ProductGridProps) {
   }
 
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:gap-5">
-        {products.map((product, index) => (
-          <ProductCard
-            key={product._id}
-            product={product}
-            eager={index === 0}
-          />
-        ))}
-      </div>
-    </div>
+    <HoverEffect className="grid-cols-2 lg:grid-cols-4">
+      {products.map((product, index) => (
+        <ProductCard
+          key={product._id}
+          product={product}
+          eager={index === 0}
+        />
+      ))}
+    </HoverEffect>
   );
 }

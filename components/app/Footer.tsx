@@ -7,10 +7,22 @@ import { sanityFetch } from "@/sanity/lib/live";
 const MAX_FOOTER_CATEGORIES = 6;
 
 export async function Footer() {
-  const [{ data: categories }, { data: brands }] = await Promise.all([
+  const [categoriesResult, brandsResult] = await Promise.allSettled([
     sanityFetch({ query: ALL_CATEGORIES_QUERY }),
     sanityFetch({ query: ALL_BRANDS_QUERY }),
   ]);
+
+  if (categoriesResult.status === "rejected") {
+    console.error("Unable to load footer categories", categoriesResult.reason);
+  }
+  if (brandsResult.status === "rejected") {
+    console.error("Unable to load footer brands", brandsResult.reason);
+  }
+
+  const categories =
+    categoriesResult.status === "fulfilled" ? categoriesResult.value.data : [];
+  const brands =
+    brandsResult.status === "fulfilled" ? brandsResult.value.data : [];
 
   const categoryLinks: FooterLink[] = categories
     .filter((category) => !category.parentId && category.title && category.slug)

@@ -23,7 +23,7 @@ export function CartItem({ item, stockInfo }: CartItemProps) {
   const exceedsStock = stockInfo?.exceedsStock ?? false;
   const currentStock = stockInfo?.currentStock ?? 999;
   const hasIssue = isOutOfStock || exceedsStock;
-  const productSlug = item.slug ?? stockInfo?.slug;
+  const productHref = `/products/${encodeURIComponent(item.productId)}`;
 
   return (
     <div
@@ -57,26 +57,15 @@ export function CartItem({ item, stockInfo }: CartItemProps) {
       {/* Details */}
       <div className="flex flex-1 flex-col">
         <div className="flex justify-between">
-          {productSlug ? (
-            <Link
-              href={`/products/${productSlug}`}
-              className={cn(
-                "font-medium text-zinc-900 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300",
-                isOutOfStock && "text-zinc-400 dark:text-zinc-500",
-              )}
-            >
-              {item.name}
-            </Link>
-          ) : (
-            <span
-              className={cn(
-                "font-medium text-zinc-900 dark:text-zinc-100",
-                isOutOfStock && "text-zinc-400 dark:text-zinc-500",
-              )}
-            >
-              {item.name}
-            </span>
-          )}
+          <Link
+            href={productHref}
+            className={cn(
+              "font-medium text-zinc-900 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300",
+              isOutOfStock && "text-zinc-400 dark:text-zinc-500",
+            )}
+          >
+            {item.name}
+          </Link>
           <Button
             variant="ghost"
             size="icon"

@@ -22,6 +22,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "TechKidz Africa",
   description: "Robotics components, modules, tools, and educational kits",
+  icons: {
+    icon: "/branding/logo.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -22,6 +22,67 @@ export type ProductReference = {
   [internalGroqTypeReferenceTo]?: "product";
 };
 
+export type RestockSubscription = {
+  _id: string;
+  _type: "restockSubscription";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  product?: ProductReference;
+  clerkUserId?: string;
+  email?: string;
+  status?: "pending" | "notified" | "cancelled";
+  requestedAt?: string;
+  notifiedAt?: string;
+};
+
+export type SanityImageAssetReference = {
+  _ref: string;
+  _type: "reference";
+  _weak?: boolean;
+  [internalGroqTypeReferenceTo]?: "sanity.imageAsset";
+};
+
+export type Promotion = {
+  _id: string;
+  _type: "promotion";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  internalTitle?: string;
+  status?: "active" | "inactive";
+  mediaType?: "image" | "youtube";
+  image?: {
+    asset?: SanityImageAssetReference;
+    media?: unknown;
+    hotspot?: SanityImageHotspot;
+    crop?: SanityImageCrop;
+    alt?: string;
+    _type: "image";
+  };
+  youtubeUrl?: string;
+  destinationUrl?: string;
+  sortOrder?: number;
+  startsAt?: string;
+  endsAt?: string;
+};
+
+export type SanityImageCrop = {
+  _type: "sanity.imageCrop";
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+};
+
+export type SanityImageHotspot = {
+  _type: "sanity.imageHotspot";
+  x?: number;
+  y?: number;
+  height?: number;
+  width?: number;
+};
+
 export type CustomerReference = {
   _ref: string;
   _type: "reference";
@@ -93,13 +154,6 @@ export type BrandReference = {
   [internalGroqTypeReferenceTo]?: "brand";
 };
 
-export type SanityImageAssetReference = {
-  _ref: string;
-  _type: "reference";
-  _weak?: boolean;
-  [internalGroqTypeReferenceTo]?: "sanity.imageAsset";
-};
-
 export type Product = {
   _id: string;
   _type: "product";
@@ -136,22 +190,6 @@ export type Product = {
   stock?: number;
   featured?: boolean;
   assemblyRequired?: boolean;
-};
-
-export type SanityImageCrop = {
-  _type: "sanity.imageCrop";
-  top?: number;
-  bottom?: number;
-  left?: number;
-  right?: number;
-};
-
-export type SanityImageHotspot = {
-  _type: "sanity.imageHotspot";
-  x?: number;
-  y?: number;
-  height?: number;
-  width?: number;
 };
 
 export type Slug = {
@@ -309,14 +347,16 @@ export type Geopoint = {
 
 export type AllSanitySchemaTypes =
   | ProductReference
+  | RestockSubscription
+  | SanityImageAssetReference
+  | Promotion
+  | SanityImageCrop
+  | SanityImageHotspot
   | CustomerReference
   | Order
   | CategoryReference
   | BrandReference
-  | SanityImageAssetReference
   | Product
-  | SanityImageCrop
-  | SanityImageHotspot
   | Slug
   | Customer
   | Category
@@ -712,6 +752,52 @@ export type AI_SEARCH_PRODUCTS_QUERY_RESULT = Array<{
   assemblyRequired: boolean | null;
 }>;
 
+// Source: lib/sanity/queries/promotions.ts
+// Variable: ACTIVE_PROMOTIONS_QUERY
+// Query: *[  _type == "promotion"  && status == "active"  && (!defined(startsAt) || dateTime(startsAt) <= dateTime(now()))  && (!defined(endsAt) || dateTime(endsAt) >= dateTime(now()))] | order(sortOrder asc, _createdAt desc) [0...6] {  _id,  internalTitle,  mediaType,  image {    asset->{      _id,      url,      metadata {        lqip,        dimensions { width, height }      }    },    alt,    hotspot,    crop  },  youtubeUrl,  destinationUrl}
+export type ACTIVE_PROMOTIONS_QUERY_RESULT = Array<{
+  _id: string;
+  internalTitle: string | null;
+  mediaType: "image" | "youtube" | null;
+  image: {
+    asset: {
+      _id: string;
+      url: string | null;
+      metadata: {
+        lqip: string | null;
+        dimensions: {
+          width: number | null;
+          height: number | null;
+        } | null;
+      } | null;
+    } | null;
+    alt: string | null;
+    hotspot: SanityImageHotspot | null;
+    crop: SanityImageCrop | null;
+  } | null;
+  youtubeUrl: string | null;
+  destinationUrl: string | null;
+}>;
+
+// Source: lib/sanity/queries/restock-subscriptions.ts
+// Variable: RESTOCK_PRODUCT_QUERY
+// Query: *[  _type == "product" && _id == $productId][0] {  _id,  "name": coalesce(title, name),  "slug": slug.current,  stock}
+export type RESTOCK_PRODUCT_QUERY_RESULT = {
+  _id: string;
+  name: string | null;
+  slug: string | null;
+  stock: number | null;
+} | null;
+
+// Source: lib/sanity/queries/restock-subscriptions.ts
+// Variable: ACTIVE_RESTOCK_SUBSCRIPTION_QUERY
+// Query: *[  _type == "restockSubscription"  && clerkUserId == $clerkUserId  && product._ref == $productId  && status == "pending"] | order(requestedAt desc)[0] {  _id,  status,  requestedAt}
+export type ACTIVE_RESTOCK_SUBSCRIPTION_QUERY_RESULT = {
+  _id: string;
+  status: "cancelled" | "notified" | "pending" | null;
+  requestedAt: string | null;
+} | null;
+
 // Source: lib/sanity/queries/stats.ts
 // Variable: ORDERS_LAST_7_DAYS_QUERY
 // Query: *[  _type == "order"  && createdAt >= $startDate  && !(_id in path("drafts.**"))] | order(createdAt desc) {  _id,  orderNumber,  "total": coalesce(totalPrice, total),  status,  createdAt,  "itemCount": select(defined(products) => count(products), count(items)),  products[]->{    "productName": coalesce(title, name),    "productId": _id,    price  },  quantities,  productPrices,  "legacyItems": items[]{    quantity,    priceAtPurchase,    "productName": coalesce(product->title, product->name),    "productId": product->_id  }}
@@ -820,6 +906,9 @@ declare module "@sanity/client" {
     '*[\n  \n  _type == "product"\n  && (count($categoryIds) == 0 || category._ref in $categoryIds)\n  && (count($brandIds) == 0 || brand._ref in $brandIds)\n  && ($searchQuery == "" || coalesce(title, name) match $searchQuery + "*" || description match $searchQuery + "*" || features[].title match $searchQuery + "*" || features[].description match $searchQuery + "*" || aiKeywords[] match $searchQuery + "*" || aiTags[] match $searchQuery + "*")\n  && ($inStock == false || stock > 0)\n\n  && defined(price)\n].price': PRODUCT_PRICE_FACET_QUERY_RESULT;
     '*[\n  _type == "product"\n  && _id in $ids\n] {\n  _id,\n  "name": coalesce(title, name),\n  "slug": slug.current,\n  price,\n  "image": images[0]{\n    asset->{\n      _id,\n      url\n    },\n    hotspot\n  },\n  stock\n}': PRODUCTS_BY_IDS_QUERY_RESULT;
     '*[\n  \n  _type == "product"\n  && (count($categoryIds) == 0 || category._ref in $categoryIds)\n  && (count($brandIds) == 0 || brand._ref in $brandIds)\n  && ($minPrice == 0 || price >= $minPrice)\n  && ($maxPrice == 0 || price <= $maxPrice)\n  && ($searchQuery == "" || coalesce(title, name) match $searchQuery + "*" || description match $searchQuery + "*" || features[].title match $searchQuery + "*" || features[].description match $searchQuery + "*" || aiKeywords[] match $searchQuery + "*" || aiTags[] match $searchQuery + "*")\n  && ($inStock == false || stock > 0)\n\n] | score(\n  boost(coalesce(title, name) match $searchQuery + "*", 3),\n  boost(aiKeywords[] match $searchQuery + "*", 2),\n  boost(aiTags[] match $searchQuery + "*", 2),\n  boost(features[].title match $searchQuery + "*", 2),\n  boost(features[].description match $searchQuery + "*", 1),\n  boost(description match $searchQuery + "*", 1)\n) | order(_score desc, coalesce(title, name) asc) [0...20] {\n  _id,\n  "name": coalesce(title, name),\n  "slug": slug.current,\n  description,\n  features[]{_key, title, description},\n  price,\n  "image": images[0]{\n    asset->{\n      _id,\n      url\n    }\n  },\n  category->{\n    _id,\n    title,\n    "slug": slug.current\n  },\n  brand->{\n    _id,\n    title,\n    "slug": slug.current\n  },\n  color,\n  size,\n  dimensions,\n  stock,\n  featured,\n  assemblyRequired\n}': AI_SEARCH_PRODUCTS_QUERY_RESULT;
+    '*[\n  _type == "promotion"\n  && status == "active"\n  && (!defined(startsAt) || dateTime(startsAt) <= dateTime(now()))\n  && (!defined(endsAt) || dateTime(endsAt) >= dateTime(now()))\n] | order(sortOrder asc, _createdAt desc) [0...6] {\n  _id,\n  internalTitle,\n  mediaType,\n  image {\n    asset->{\n      _id,\n      url,\n      metadata {\n        lqip,\n        dimensions { width, height }\n      }\n    },\n    alt,\n    hotspot,\n    crop\n  },\n  youtubeUrl,\n  destinationUrl\n}': ACTIVE_PROMOTIONS_QUERY_RESULT;
+    '*[\n  _type == "product" && _id == $productId\n][0] {\n  _id,\n  "name": coalesce(title, name),\n  "slug": slug.current,\n  stock\n}': RESTOCK_PRODUCT_QUERY_RESULT;
+    '*[\n  _type == "restockSubscription"\n  && clerkUserId == $clerkUserId\n  && product._ref == $productId\n  && status == "pending"\n] | order(requestedAt desc)[0] {\n  _id,\n  status,\n  requestedAt\n}': ACTIVE_RESTOCK_SUBSCRIPTION_QUERY_RESULT;
     '*[\n  _type == "order"\n  && createdAt >= $startDate\n  && !(_id in path("drafts.**"))\n] | order(createdAt desc) {\n  _id,\n  orderNumber,\n  "total": coalesce(totalPrice, total),\n  status,\n  createdAt,\n  "itemCount": select(defined(products) => count(products), count(items)),\n  products[]->{\n    "productName": coalesce(title, name),\n    "productId": _id,\n    price\n  },\n  quantities,\n  productPrices,\n  "legacyItems": items[]{\n    quantity,\n    priceAtPurchase,\n    "productName": coalesce(product->title, product->name),\n    "productId": product->_id\n  }\n}': ORDERS_LAST_7_DAYS_QUERY_RESULT;
     '{\n  "paid": count(*[_type == "order" && status == "paid" && !(_id in path("drafts.**"))]),\n  "shipped": count(*[_type == "order" && status == "shipped" && !(_id in path("drafts.**"))]),\n  "delivered": count(*[_type == "order" && status == "delivered" && !(_id in path("drafts.**"))]),\n  "cancelled": count(*[_type == "order" && status == "cancelled" && !(_id in path("drafts.**"))])\n}': ORDER_STATUS_DISTRIBUTION_QUERY_RESULT;
     '*[\n  _type == "order"\n  && status in ["paid", "shipped", "delivered"]\n  && !(_id in path("drafts.**"))\n] {\n  products[]->{\n    "productId": _id,\n    "productName": coalesce(title, name),\n    "productPrice": price\n  },\n  quantities,\n  productPrices,\n  "legacyItems": items[]{\n    "productId": product->_id,\n    "productName": coalesce(product->title, product->name),\n    "productPrice": product->price,\n    quantity\n  }\n}': TOP_SELLING_PRODUCTS_QUERY_RESULT;
