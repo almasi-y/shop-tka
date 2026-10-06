@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TechKidz Africa",
+  title: "Code Innovators Shop",
   description: "Robotics components, modules, tools, and educational kits",
   icons: {
     icon: "/branding/logo.svg",

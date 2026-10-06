@@ -2,6 +2,8 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { client } from "@/sanity/lib/client";
 import { PRODUCTS_BY_IDS_QUERY } from "@/lib/sanity/queries/products";
 import { shippingAddressSchema } from "@/lib/checkout/shipping-address";
+import { getShippingRates } from "@/lib/shipping/get-shipping-rates";
+import { getShippingFee } from "@/lib/shipping/kenya";
 
 const PAYSTACK_API_URL = "https://api.paystack.co/transaction/initialize";
 const CURRENCY = "KES";
@@ -20,6 +22,11 @@ type PaystackInitializeResponse = {
     reference: string;
   };
 };
+
+function toSubunits(amount: number) {
+  const subunits = Math.round(amount * 100);
+  return Number.isSafeInteger(subunits) ? subunits : null;
+}
 
 function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_BASE_URL) {
@@ -53,11 +60,16 @@ export async function POST(request: Request) {
       );
     }
 
-    let body: { items?: CheckoutItem[]; shippingAddress?: unknown };
+    let body: {
+      items?: CheckoutItem[];
+      shippingAddress?: unknown;
+      expectedShippingFee?: unknown;
+    };
     try {
       body = (await request.json()) as {
         items?: CheckoutItem[];
         shippingAddress?: unknown;
+        expectedShippingFee?: unknown;
       };
     } catch {
       return Response.json(
@@ -87,6 +99,22 @@ export async function POST(request: Request) {
       return Response.json(
         { error: "Please enter a complete shipping address" },
         { status: 400 },
+      );
+    }
+
+    const shippingRates = await getShippingRates();
+    const shippingFee = getShippingFee(
+      parsedAddress.data.county,
+      shippingRates,
+    );
+    if (
+      typeof body.expectedShippingFee !== "number" ||
+      !Number.isSafeInteger(body.expectedShippingFee) ||
+      body.expectedShippingFee !== shippingFee
+    ) {
+      return Response.json(
+        { error: "Shipping rates changed. Refresh checkout and try again." },
+        { status: 409 },
       );
     }
 
@@ -122,7 +150,7 @@ export async function POST(request: Request) {
 
     const validationErrors: string[] = [];
     const productPrices: number[] = [];
-    let totalMajorUnits = 0;
+    let subtotalInSubunits = 0;
 
     for (const item of normalizedItems) {
       const product = products.find(
@@ -154,12 +182,22 @@ export async function POST(request: Request) {
       }
 
       productPrices.push(product.price);
-      totalMajorUnits += product.price * item.quantity;
+      const unitPriceInSubunits = toSubunits(product.price);
+      if (unitPriceInSubunits === null || unitPriceInSubunits <= 0) {
+        validationErrors.push(
+          `${product.name ?? "A product"} has an invalid price`,
+        );
+        continue;
+      }
+      subtotalInSubunits += unitPriceInSubunits * item.quantity;
     }
 
-    const amountInSubunits = Math.round(totalMajorUnits * 100);
+    const shippingFeeInSubunits = toSubunits(shippingFee);
+    const amountInSubunits =
+      shippingFeeInSubunits === null
+        ? Number.NaN
+        : subtotalInSubunits + shippingFeeInSubunits;
     if (
-      !Number.isFinite(totalMajorUnits) ||
       !Number.isSafeInteger(amountInSubunits) ||
       amountInSubunits <= 0
     ) {
@@ -168,6 +206,9 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    const subtotalMajorUnits = subtotalInSubunits / 100;
+    const totalMajorUnits = amountInSubunits / 100;
 
     if (validationErrors.length > 0) {
       return Response.json(
@@ -206,7 +247,22 @@ export async function POST(request: Request) {
           productIds,
           quantities: normalizedItems.map((item) => item.quantity),
           productPrices,
+          subtotal: subtotalMajorUnits,
+          shippingFee,
+          total: totalMajorUnits,
           shippingAddress: parsedAddress.data,
+          custom_fields: [
+            {
+              display_name: "Shipping fee",
+              variable_name: "shipping_fee",
+              value: `KES ${shippingFee.toFixed(2)}`,
+            },
+            {
+              display_name: "Shipping county",
+              variable_name: "shipping_county",
+              value: parsedAddress.data.county,
+            },
+          ],
         },
       }),
     });
@@ -223,6 +279,9 @@ export async function POST(request: Request) {
     return Response.json({
       authorizationUrl: result.data.authorization_url,
       reference: result.data.reference,
+      subtotal: subtotalMajorUnits,
+      shippingFee,
+      total: totalMajorUnits,
     });
   } catch (error) {
     console.error("Checkout initialization failed", error);

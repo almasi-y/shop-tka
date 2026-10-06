@@ -23,8 +23,8 @@ export function WelcomeScreen({
 }: WelcomeScreenProps) {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center px-4">
-      <div className="rounded-full bg-brand/10 p-4 dark:bg-brand/20">
-        <Sparkles className="h-8 w-8 text-brand" />
+      <div className="rounded-full bg-brand-mist p-4 dark:bg-brand-periwinkle/20">
+        <Sparkles className="h-8 w-8 text-brand-periwinkle" />
       </div>
       <h3 className="mt-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
         How can I help you today?
@@ -68,7 +68,7 @@ export function WelcomeScreen({
                 key={suggestion}
                 type="button"
                 onClick={() => onSuggestionClick({ text: suggestion })}
-                className="rounded-full border border-brand/20 bg-brand/10 px-3 py-1.5 text-sm text-brand transition-colors hover:bg-brand/10 dark:border-brand/60 dark:bg-brand/20 dark:text-brand-light dark:hover:bg-brand/30"
+                className="rounded-full border border-brand-periwinkle-soft bg-brand-mist px-3 py-1.5 text-sm text-brand-night transition-colors hover:bg-brand/10 dark:border-brand-bridge dark:bg-brand-periwinkle/20 dark:text-brand-periwinkle-soft dark:hover:bg-brand/30"
               >
                 {suggestion}
               </button>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
+  Truck,
   ShoppingCart,
   Menu,
   X,
@@ -36,6 +37,11 @@ const navItems = [
     label: "Catalog",
     href: "/admin/catalog",
     icon: Tags,
+  },
+  {
+    label: "Shipping",
+    href: "/admin/shipping",
+    icon: Truck,
   },
 ];
 

@@ -6,10 +6,17 @@ import Image from "next/image";
 import { ArrowLeft, ShoppingBag, AlertTriangle, Loader2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { CheckoutButton } from "@/components/app/CheckoutButton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ShippingAddressFields } from "@/components/app/ShippingAddressFields";
 import { formatPrice } from "@/lib/utils";
-import type { ShippingAddress } from "@/lib/checkout/shipping-address";
+import {
+  EMPTY_SHIPPING_ADDRESS,
+  type ShippingAddress,
+  type ShippingAddressForm,
+} from "@/lib/checkout/shipping-address";
+import {
+  getShippingFee,
+  type ShippingRates,
+} from "@/lib/shipping/kenya";
 import {
   useCartItems,
   useTotalPrice,
@@ -17,27 +24,33 @@ import {
 } from "@/lib/store/cart-store-provider";
 import { useCartStock } from "@/lib/hooks/useCartStock";
 
-export function CheckoutClient() {
-  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-    name: "",
-    line1: "",
-    line2: "",
-    city: "",
-    postcode: "",
-    country: "",
-  });
+interface CheckoutClientProps {
+  shippingRates: ShippingRates;
+  initialShippingAddress: ShippingAddress | null;
+}
+
+export function CheckoutClient({
+  shippingRates,
+  initialShippingAddress,
+}: CheckoutClientProps) {
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddressForm>(
+    () => ({ ...EMPTY_SHIPPING_ADDRESS, ...initialShippingAddress }),
+  );
   const items = useCartItems();
   const totalPrice = useTotalPrice();
   const totalItems = useTotalItems();
   const { stockMap, isLoading, hasStockIssues } = useCartStock(items);
+  const shippingFee = shippingAddress.county
+    ? getShippingFee(shippingAddress.county, shippingRates)
+    : 0;
   const isAddressComplete = [
     shippingAddress.name,
     shippingAddress.line1,
     shippingAddress.city,
-    shippingAddress.country,
+    shippingAddress.county,
   ].every((value) => value.trim().length >= 2);
 
-  const updateAddress = (field: keyof ShippingAddress, value: string) => {
+  const updateAddress = (field: keyof ShippingAddressForm, value: string) => {
     setShippingAddress((current) => ({ ...current, [field]: value }));
   };
 
@@ -88,7 +101,7 @@ export function CheckoutClient() {
 
             {/* Stock Issues Warning */}
             {hasStockIssues && !isLoading && (
-              <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-brand/20 bg-brand/10 px-4 py-3 text-sm text-brand dark:border-brand/60 dark:bg-brand/20 dark:text-brand-light">
+              <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
                 <AlertTriangle className="h-5 w-5 shrink-0" />
                 <span>
                   Some items have stock issues. Please update your cart before
@@ -128,7 +141,7 @@ export function CheckoutClient() {
                           src={item.image}
                           alt={item.name}
                           fill
-                          className="object-contain p-1"
+                          className="object-cover"
                           sizes="80px"
                         />
                       ) : (
@@ -153,7 +166,7 @@ export function CheckoutClient() {
                           </p>
                         )}
                         {stockInfo?.exceedsStock && !stockInfo.isOutOfStock && (
-                          <p className="mt-1 text-sm font-medium text-brand">
+                          <p className="mt-1 text-sm font-medium text-amber-600">
                             Only {stockInfo.currentStock} available
                           </p>
                         )}
@@ -181,69 +194,11 @@ export function CheckoutClient() {
             <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
               Shipping Address
             </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="shipping-name">Full name</Label>
-                <Input
-                  id="shipping-name"
-                  autoComplete="name"
-                  value={shippingAddress.name}
-                  onChange={(event) => updateAddress("name", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="shipping-line1">Address line 1</Label>
-                <Input
-                  id="shipping-line1"
-                  autoComplete="address-line1"
-                  value={shippingAddress.line1}
-                  onChange={(event) => updateAddress("line1", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="shipping-line2">Address line 2 (optional)</Label>
-                <Input
-                  id="shipping-line2"
-                  autoComplete="address-line2"
-                  value={shippingAddress.line2 ?? ""}
-                  onChange={(event) => updateAddress("line2", event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shipping-city">City</Label>
-                <Input
-                  id="shipping-city"
-                  autoComplete="address-level2"
-                  value={shippingAddress.city}
-                  onChange={(event) => updateAddress("city", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shipping-postcode">Postal code (optional)</Label>
-                <Input
-                  id="shipping-postcode"
-                  autoComplete="postal-code"
-                  value={shippingAddress.postcode ?? ""}
-                  onChange={(event) =>
-                    updateAddress("postcode", event.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="shipping-country">Country</Label>
-                <Input
-                  id="shipping-country"
-                  autoComplete="country-name"
-                  value={shippingAddress.country}
-                  onChange={(event) =>
-                    updateAddress("country", event.target.value)
-                  }
-                  required
-                />
-              </div>
+            <div className="mt-4">
+              <ShippingAddressFields
+                address={shippingAddress}
+                onChange={updateAddress}
+              />
             </div>
           </div>
         </div>
@@ -269,7 +224,9 @@ export function CheckoutClient() {
                   Shipping
                 </span>
                 <span className="text-zinc-900 dark:text-zinc-100">
-                  Calculated at checkout
+                  {shippingAddress.county
+                    ? formatPrice(shippingFee)
+                    : "Select a county"}
                 </span>
               </div>
               <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
@@ -278,7 +235,7 @@ export function CheckoutClient() {
                     Total
                   </span>
                   <span className="text-zinc-900 dark:text-zinc-100">
-                    {formatPrice(totalPrice)}
+                    {formatPrice(totalPrice + shippingFee)}
                   </span>
                 </div>
               </div>
@@ -287,6 +244,7 @@ export function CheckoutClient() {
             <div className="mt-6">
               <CheckoutButton
                 shippingAddress={shippingAddress}
+                shippingFee={shippingFee}
                 disabled={hasStockIssues || isLoading || !isAddressComplete}
               />
               {!isAddressComplete && (

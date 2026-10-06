@@ -155,7 +155,7 @@ function FeaturedSlide({ product, eager = false }: FeaturedSlideProps) {
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
-            href={`/products/${encodeURIComponent(product._id)}`}
+            href={`/products/${encodeURIComponent(product.slug ?? product._id)}`}
             className={cn(
               buttonVariants({ size: "lg" }),
               "bg-white text-zinc-900 hover:bg-zinc-100",

@@ -102,6 +102,23 @@ export const orderType = defineType({
       ],
     }),
     defineField({
+      name: "subtotal",
+      type: "number",
+      group: "details",
+      readOnly: true,
+      description: "Product subtotal in KES before shipping.",
+      validation: (rule) => rule.min(0),
+    }),
+    defineField({
+      name: "shippingFee",
+      title: "Shipping fee",
+      type: "number",
+      group: "details",
+      readOnly: true,
+      description: "Delivery fee charged at checkout in KES.",
+      validation: (rule) => rule.min(0),
+    }),
+    defineField({
       name: "products",
       type: "array",
       group: "details",
@@ -257,6 +274,11 @@ export const orderType = defineType({
           validation: (rule) => rule.required(),
         }),
         defineField({ name: "postcode", type: "string" }),
+        defineField({
+          name: "county",
+          type: "string",
+          description: "Kenyan delivery county.",
+        }),
         defineField({
           name: "country",
           type: "string",

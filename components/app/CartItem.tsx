@@ -23,7 +23,7 @@ export function CartItem({ item, stockInfo }: CartItemProps) {
   const exceedsStock = stockInfo?.exceedsStock ?? false;
   const currentStock = stockInfo?.currentStock ?? 999;
   const hasIssue = isOutOfStock || exceedsStock;
-  const productHref = `/products/${encodeURIComponent(item.productId)}`;
+  const productHref = `/products/${encodeURIComponent(item.slug ?? item.productId)}`;
 
   return (
     <div

@@ -46,7 +46,7 @@ function CategoryLinks({
             className={cn(
               "flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium transition-colors",
               !activeCategory
-                ? "bg-brand-purple-light/35 text-brand-purple dark:bg-brand-purple/25 dark:text-brand-purple-light"
+                ? "bg-brand-mist text-brand-night dark:bg-brand-periwinkle/25 dark:text-brand-periwinkle-soft"
                 : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900",
             )}
           >
@@ -65,7 +65,7 @@ function CategoryLinks({
                 className={cn(
                   "flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-brand-purple-light/35 text-brand-purple dark:bg-brand-purple/25 dark:text-brand-purple-light"
+                    ? "bg-brand-mist text-brand-night dark:bg-brand-periwinkle/25 dark:text-brand-periwinkle-soft"
                     : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900",
                 )}
               >
@@ -114,14 +114,14 @@ export function StoreCategoryNavigation({
         aria-expanded={mobileOpen}
       >
         <span className="inline-flex items-center gap-2">
-          <LayoutGrid className="size-4 text-brand-purple" />
+          <LayoutGrid className="size-4 text-brand-periwinkle" />
           Categories
         </span>
         <ChevronRight className="size-4" />
       </Button>
 
       <aside className="hidden max-h-[500px] min-h-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm lg:flex lg:flex-col dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex min-h-12 shrink-0 items-center gap-2 bg-brand-purple px-4 py-3 text-sm font-semibold text-white">
+        <div className="flex min-h-12 shrink-0 items-center gap-2 bg-brand px-4 py-3 text-sm font-semibold text-white">
           <LayoutGrid className="size-4" aria-hidden="true" />
           All Categories
         </div>
@@ -145,7 +145,7 @@ export function StoreCategoryNavigation({
             aria-label="Close categories"
           />
           <div className="relative flex h-full w-[min(88vw,22rem)] flex-col bg-white shadow-2xl dark:bg-zinc-950">
-            <div className="flex min-h-14 shrink-0 items-center justify-between bg-brand-purple px-4 text-white">
+            <div className="flex min-h-14 shrink-0 items-center justify-between bg-brand px-4 text-white">
               <h2
                 id="mobile-categories-title"
                 className="inline-flex items-center gap-2 font-semibold"

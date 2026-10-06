@@ -1,5 +1,24 @@
 import { createStore } from "zustand/vanilla";
-import { persist } from "zustand/middleware";
+import {
+  createJSONStorage,
+  persist,
+  type StateStorage,
+} from "zustand/middleware";
+
+const browserStorage: StateStorage = {
+  getItem: (name) =>
+    typeof window === "undefined" ? null : window.localStorage.getItem(name),
+  setItem: (name, value) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(name, value);
+    }
+  },
+  removeItem: (name) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(name);
+    }
+  },
+};
 
 // Types
 export interface CartItem {
@@ -88,6 +107,9 @@ export const createCartStore = (initState: CartState = defaultInitState) => {
       }),
       {
         name: "cart-storage",
+        // Resolve window only when storage is used so SSR cannot disable
+        // persistence for the store before client hydration begins.
+        storage: createJSONStorage(() => browserStorage),
         // Skip automatic hydration - we'll trigger it manually on the client
         skipHydration: true,
         // Only persist items, not UI state like isOpen

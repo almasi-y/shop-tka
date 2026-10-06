@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: CategoryPageProps) {
 
   return {
     title: category?.title
-      ? `${category.title} | TechKidz Africa`
-      : "Category | TechKidz Africa",
+      ? `${category.title} | Code Innovators Shop`
+      : "Category | Code Innovators Shop",
     description:
       category?.title ? `Shop ${category.title} products` : "Shop robotics products",
   };

@@ -21,6 +21,7 @@ type PaystackEvent = {
       productIds?: string[];
       quantities?: number[];
       productPrices?: number[];
+      shippingFee?: number;
       shippingAddress?: unknown;
     };
   };
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
   const productIds = metadata?.productIds;
   const quantities = metadata?.quantities;
   const productPrices = metadata?.productPrices;
+  const shippingFee = metadata?.shippingFee;
   const parsedAddress = shippingAddressSchema.safeParse(
     metadata?.shippingAddress,
   );
@@ -94,6 +96,9 @@ export async function POST(request: Request) {
     !productIds?.length ||
     !quantities ||
     !productPrices ||
+    typeof shippingFee !== "number" ||
+    !Number.isSafeInteger(shippingFee) ||
+    shippingFee < 0 ||
     !parsedAddress.success ||
     productIds.length !== quantities.length ||
     productIds.length !== productPrices.length ||
@@ -118,10 +123,11 @@ export async function POST(request: Request) {
     return Response.json({ received: true, duplicate: true });
   }
 
-  const total = quantities.reduce(
+  const subtotal = quantities.reduce(
     (sum, quantity, index) => sum + productPrices[index] * quantity,
     0,
   );
+  const total = subtotal + shippingFee;
 
   if (
     transaction.status !== "success" ||
@@ -160,6 +166,8 @@ export async function POST(request: Request) {
     })),
     quantities,
     productPrices,
+    subtotal,
+    shippingFee,
     totalPrice: total,
     status: "paid",
     paystackReference: reference,

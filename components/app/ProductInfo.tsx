@@ -2,13 +2,17 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { AddToCartButton } from "@/components/app/AddToCartButton";
 import { AskAISimilarButton } from "@/components/app/AskAISimilarButton";
-import { StockBadge } from "@/components/app/StockBadge";
+import { ProductShareActions } from "@/components/app/ProductShareActions";
+import { WishlistButton } from "@/components/app/WishlistButton";
 import { formatPrice } from "@/lib/utils";
 import type { PRODUCT_BY_SLUG_QUERY_RESULT } from "@/sanity.types";
 
 interface ProductInfoProps {
   product: NonNullable<PRODUCT_BY_SLUG_QUERY_RESULT>;
 }
+
+const AI_ASSISTANT_ENABLED =
+  process.env.NEXT_PUBLIC_AI_ASSISTANT_ENABLED === "true";
 
 export function ProductInfo({ product }: ProductInfoProps) {
   const imageUrl = product.images?.[0]?.asset?.url;
@@ -67,23 +71,36 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Stock & Add to Cart */}
       <div className="mt-6 flex flex-col gap-3">
-        <StockBadge productId={product._id} stock={product.stock ?? 0} />
-        <AddToCartButton
-          productId={product._id}
-          slug={product.slug ?? undefined}
-          name={product.name ?? "Unknown Product"}
-          price={product.price ?? 0}
-          image={imageUrl ?? undefined}
-          stock={product.stock ?? 0}
-          enableRestockNotification
-        />
-        <AskAISimilarButton
-          productName={product.name ?? "this product"}
-          category={product.category?.title}
-          brand={product.brand?.title}
-          color={product.color}
-          size={product.size}
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <AddToCartButton
+            productId={product._id}
+            slug={product.slug ?? undefined}
+            name={product.name ?? "Unknown Product"}
+            price={product.price ?? 0}
+            image={imageUrl ?? undefined}
+            stock={product.stock ?? 0}
+            enableRestockNotification
+            className="min-w-0 px-2 text-xs sm:text-sm"
+          />
+          <WishlistButton
+            productId={product._id}
+            productName={product.name ?? "this product"}
+            className="h-11 min-w-0 px-2 text-xs sm:text-sm"
+          />
+        </div>
+        {AI_ASSISTANT_ENABLED && (
+          <AskAISimilarButton
+            productName={product.name ?? "this product"}
+            category={product.category?.title}
+            brand={product.brand?.title}
+            color={product.color}
+            size={product.size}
+          />
+        )}
+      </div>
+
+      <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+        <ProductShareActions productName={product.name ?? "this product"} />
       </div>
 
       {/* Metadata */}

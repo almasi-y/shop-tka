@@ -6,6 +6,20 @@ interface ShoppingAgentOptions {
   userId: string | null;
 }
 
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4.5";
+
+function getShoppingAssistantModel() {
+  const model = process.env.AI_GATEWAY_MODEL?.trim() || DEFAULT_MODEL;
+
+  if (!model.startsWith("anthropic/")) {
+    throw new Error(
+      "AI_GATEWAY_MODEL must use an Anthropic model through Vercel AI Gateway",
+    );
+  }
+
+  return model;
+}
+
 const baseInstructions = `You are a friendly shopping assistant for a robotics components and educational kits store.
 
 ## Product search
@@ -72,7 +86,7 @@ export function createShoppingAgent({ userId }: ShoppingAgentOptions) {
   }
 
   return new ToolLoopAgent({
-    model: gateway("anthropic/claude-sonnet-4.5"),
+    model: gateway(getShoppingAssistantModel()),
     instructions,
     tools,
   });

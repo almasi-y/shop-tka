@@ -34,10 +34,48 @@ export const customerType = defineType({
       type: "string",
       group: "paystack",
       readOnly: true,
-      description: "paystack customer ID for payments",
-      validation: (rule) => [
-        rule.required().error("paystack customer ID is required"),
+      description: "Paystack customer ID when one has been assigned.",
+    }),
+    defineField({
+      name: "shippingAddress",
+      title: "Default shipping address",
+      type: "object",
+      group: "details",
+      fields: [
+        defineField({
+          name: "name",
+          title: "Full name",
+          type: "string",
+          validation: (rule) => rule.required(),
+        }),
+        defineField({
+          name: "line1",
+          title: "Address line 1",
+          type: "string",
+          validation: (rule) => rule.required(),
+        }),
+        defineField({ name: "line2", title: "Address line 2", type: "string" }),
+        defineField({
+          name: "city",
+          type: "string",
+          validation: (rule) => rule.required(),
+        }),
+        defineField({ name: "postcode", title: "Postal code", type: "string" }),
+        defineField({
+          name: "county",
+          type: "string",
+          description: "Kenyan delivery county.",
+          validation: (rule) => rule.required(),
+        }),
+        defineField({
+          name: "country",
+          type: "string",
+          initialValue: "Kenya",
+          readOnly: true,
+          validation: (rule) => rule.required(),
+        }),
       ],
+      description: "Address used to prefill this customer's checkout form.",
     }),
     defineField({
       name: "createdAt",

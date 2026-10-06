@@ -61,7 +61,7 @@ function PromotionImage({
       src={imageUrl}
       alt={promotion.image?.alt ?? promotion.internalTitle ?? "Promotion"}
       fill
-      className="object-contain"
+      className="object-cover"
       sizes="(max-width: 1024px) 100vw, 70vw"
       loading={eager ? "eager" : "lazy"}
       placeholder={promotion.image?.asset?.metadata?.lqip ? "blur" : "empty"}
@@ -104,12 +104,12 @@ function PromotionSlide({
   const videoId = getYouTubeVideoId(promotion.youtubeUrl);
 
   return (
-    <div className="relative h-64 w-full md:h-[400px] lg:h-[420px]">
+    <div className="relative h-64 w-full overflow-hidden rounded-xl md:h-[400px] lg:h-[420px]">
       {promotion.mediaType === "youtube" && videoId ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&loop=1&playlist=${videoId}&playsinline=1&rel=0`}
           title={promotion.internalTitle ?? "Promotional video"}
-          className="h-full w-full border-0"
+          className="h-full w-full rounded-xl border-0"
           loading={eager ? "eager" : "lazy"}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
@@ -160,16 +160,19 @@ export function PromotionCarousel({
   if (count === 0) return null;
 
   return (
-    <div className="relative w-full overflow-hidden">
+    <div className="relative w-full overflow-hidden rounded-xl">
       <Carousel
         setApi={setApi}
         opts={{ loop: count > 1, align: "start" }}
         plugins={plugins}
-        className="w-full"
+        className="w-full overflow-hidden rounded-xl"
       >
         <CarouselContent className="-ml-0">
           {promotions.map((promotion, index) => (
-            <CarouselItem key={promotion._id} className="pl-0">
+            <CarouselItem
+              key={promotion._id}
+              className="overflow-hidden rounded-xl pl-0"
+            >
               <PromotionSlide promotion={promotion} eager={index === 0} />
             </CarouselItem>
           ))}

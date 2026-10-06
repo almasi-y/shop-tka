@@ -6,6 +6,8 @@ import { orderType } from './orderType'
 import { productType } from './productType'
 import { promotionType } from './promotionType'
 import { restockSubscriptionType } from './restockSubscriptionType'
+import { wishlistItemType } from './wishlistItemType'
+import { shippingSettingsType } from './shippingSettingsType'
 
   
 export const schema: { types: SchemaTypeDefinition[] } = {
@@ -17,5 +19,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     productType,
     promotionType,
     restockSubscriptionType,
+    wishlistItemType,
+    shippingSettingsType,
   ],
 }

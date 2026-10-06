@@ -30,7 +30,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
 
   const stock = product.stock ?? 0;
   const hasMultipleImages = images.length > 1;
-  const productHref = `/products/${encodeURIComponent(product._id)}`;
+  const productHref = `/products/${encodeURIComponent(product.slug ?? product._id)}`;
 
   return (
     <Card className="relative flex h-full flex-col gap-0 overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">

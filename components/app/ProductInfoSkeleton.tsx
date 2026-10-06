@@ -3,18 +3,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function ProductInfoSkeleton() {
   return (
     <div className="flex flex-col space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-4 w-16" />
-        <Skeleton className="h-4 w-4" />
-        <Skeleton className="h-4 w-24" />
-      </div>
+      {/* Brand */}
+      <Skeleton className="h-4 w-24" />
 
       {/* Title */}
       <Skeleton className="h-9 w-3/4" />
 
       {/* Price */}
       <Skeleton className="h-8 w-28" />
+
+      {/* Primary purchase controls */}
+      <div className="space-y-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+        <Skeleton className="h-6 w-20" />
+        <Skeleton className="h-11 w-full" />
+      </div>
 
       {/* Description */}
       <div className="space-y-2">
@@ -49,11 +51,6 @@ export function ProductInfoSkeleton() {
         </div>
       </div>
 
-      {/* Add to Cart Button */}
-      <Skeleton className="h-12 w-full" />
-
-      {/* AI Similar Button */}
-      <Skeleton className="h-10 w-full" />
     </div>
   );
 }

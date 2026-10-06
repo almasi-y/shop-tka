@@ -1,4 +1,4 @@
-# Robotics Store
+# Code Innovators Shop
 
 AI-assisted robotics e-commerce application built with Next.js 16, Clerk,
 Sanity, Paystack, Zustand, and the Vercel AI SDK.

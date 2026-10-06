@@ -6,11 +6,12 @@ import { defineQuery } from "next-sanity";
  */
 export const ALL_CATEGORIES_QUERY = defineQuery(`*[
   _type == "category"
-] | order(title asc) {
+] | order(coalesce(displayOrder, 2147483647) asc, title asc) {
   _id,
   title,
   "slug": slug.current,
   "parentId": parentCategory._ref,
+  displayOrder,
   "image": image{
     asset->{
       _id,
@@ -31,6 +32,7 @@ export const CATEGORY_BY_SLUG_QUERY = defineQuery(`*[
   title,
   "slug": slug.current,
   "parentId": parentCategory._ref,
+  displayOrder,
   "image": image{
     asset->{
       _id,

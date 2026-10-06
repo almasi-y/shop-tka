@@ -64,6 +64,9 @@ function AddressEditorContent(handle: AddressEditorProps) {
         </Suspense>
       </div>
       <Suspense fallback={<Skeleton className="h-16" />}>
+        <AddressField handle={handle} field="county" label="County" placeholder="Mombasa" />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-16" />}>
         <AddressField handle={handle} field="country" label="Country" placeholder="Kenya" />
       </Suspense>
     </div>

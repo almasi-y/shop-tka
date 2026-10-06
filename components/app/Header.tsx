@@ -5,17 +5,36 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import {
+  ChevronDown,
+  Heart,
+  LogOut,
+  MapPin,
   MessageCircle,
+  Package,
   PhoneCall,
+  RotateCcw,
   Search,
+  Settings,
   ShoppingCart,
   UserRound,
 } from "lucide-react";
-import { SignInButton, UserButton, useAuth } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
+import { SignInButton, useAuth, useClerk } from "@clerk/nextjs";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useCartActions, useTotalItems } from "@/lib/store/cart-store-provider";
 import { useChatActions } from "@/lib/store/chat-store-provider";
+
+const AI_ASSISTANT_ENABLED =
+  process.env.NEXT_PUBLIC_AI_ASSISTANT_ENABLED === "true";
 
 function StoreSearch({ defaultValue = "" }: { defaultValue?: string }) {
   return (
@@ -53,6 +72,64 @@ function CurrentStoreSearch() {
   return <StoreSearch defaultValue={searchParams.get("q") ?? ""} />;
 }
 
+function AccountMenu() {
+  const { openUserProfile, signOut } = useClerk();
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger
+        openOnHover
+        delay={100}
+        closeDelay={150}
+        aria-label="Open account menu"
+        className={buttonVariants({ variant: "ghost", size: "sm" })}
+      >
+        <UserRound className="size-5" />
+        <span className="hidden lg:inline">Account</span>
+        <ChevronDown className="size-3.5 text-zinc-500" aria-hidden="true" />
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" sideOffset={8} className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>My account</DropdownMenuLabel>
+          <DropdownMenuItem render={<Link href="/orders" />}>
+            <Package aria-hidden="true" />
+            My Orders
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/wishlist" />}>
+            <Heart aria-hidden="true" />
+            My Wishlist
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/account/address" />}>
+            <MapPin aria-hidden="true" />
+            My Address
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <RotateCcw aria-hidden="true" />
+            My Returns
+            <span className="ml-auto text-[0.625rem] font-semibold uppercase tracking-wide text-muted-foreground">
+              Soon
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => openUserProfile()}>
+          <Settings aria-hidden="true" />
+          Manage Account
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => void signOut({ redirectUrl: "/" })}
+        >
+          <LogOut aria-hidden="true" />
+          Sign Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function Header() {
   const totalItems = useTotalItems();
   const { openCart } = useCartActions();
@@ -77,10 +154,10 @@ export function Header() {
       </div>
 
       <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 px-4 py-3 sm:px-6 md:grid-cols-[auto_minmax(16rem,1fr)_auto] md:gap-6 lg:px-8">
-        <Link href="/" aria-label="TechKidz Africa home" className="shrink-0">
+        <Link href="/" aria-label="Code Innovators Shop home" className="shrink-0">
           <Image
             src="/branding/logo.svg"
-            alt="TechKidz Africa"
+            alt="Code Innovators Shop"
             width={270}
             height={135}
             loading="eager"
@@ -95,19 +172,36 @@ export function Header() {
         </div>
 
         <nav className="flex items-center justify-end gap-1 sm:gap-2" aria-label="Store controls">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={openChat}
-            aria-label="Open shopping assistant"
-          >
-            <MessageCircle className="size-5" />
-          </Button>
+          {AI_ASSISTANT_ENABLED && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={openChat}
+              aria-label="Open shopping assistant"
+            >
+              <MessageCircle className="size-5" />
+            </Button>
+          )}
+          {isSignedIn ? (
+            <Link
+              href="/wishlist"
+              aria-label="Open wishlist"
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+            >
+              <Heart className="size-5" />
+            </Link>
+          ) : (
+            <SignInButton mode="modal" withSignUp forceRedirectUrl="/wishlist" signUpForceRedirectUrl="/wishlist">
+              <Button variant="ghost" size="icon" aria-label="Sign in to view wishlist">
+                <Heart className="size-5" />
+              </Button>
+            </SignInButton>
+          )}
           <Button
             variant="ghost"
             size="icon"
             onClick={openCart}
-            className="relative"
+            className="relative overflow-visible"
             aria-label={
               totalItems > 0
                 ? `Open cart, ${totalItems} ${totalItems === 1 ? "item" : "items"}`
@@ -118,14 +212,14 @@ export function Header() {
             {totalItems > 0 && (
               <span
                 aria-hidden="true"
-                className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-brand-purple px-1 text-[0.65rem] font-bold leading-none text-white shadow-sm ring-2 ring-white dark:ring-zinc-950"
+                className="absolute right-0 top-0 z-10 flex size-4.5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full bg-brand-purple px-1 text-[0.625rem] font-bold leading-none text-white shadow-sm ring-2 ring-white dark:ring-zinc-950"
               >
                 {totalItems > 99 ? "99+" : totalItems}
               </span>
             )}
           </Button>
           {isSignedIn ? (
-            <UserButton />
+            <AccountMenu />
           ) : (
             <SignInButton mode="modal" withSignUp>
               <Button variant="ghost" size="sm" aria-label="Sign in or register">

@@ -6,16 +6,18 @@ import { Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCartItems } from "@/lib/store/cart-store-provider";
-import type { ShippingAddress } from "@/lib/checkout/shipping-address";
+import type { ShippingAddressForm } from "@/lib/checkout/shipping-address";
 
 interface CheckoutButtonProps {
   disabled?: boolean;
-  shippingAddress: ShippingAddress;
+  shippingAddress: ShippingAddressForm;
+  shippingFee: number;
 }
 
 export function CheckoutButton({
   disabled,
   shippingAddress,
+  shippingFee,
 }: CheckoutButtonProps) {
   const router = useRouter();
   const items = useCartItems();
@@ -29,7 +31,11 @@ export function CheckoutButton({
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, shippingAddress }),
+        body: JSON.stringify({
+          items,
+          shippingAddress,
+          expectedShippingFee: shippingFee,
+        }),
       });
       const result = await response.json();
 

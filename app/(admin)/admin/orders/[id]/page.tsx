@@ -24,6 +24,8 @@ interface OrderDetailProjection {
   orderNumber: string;
   email: string;
   total: number;
+  subtotal: number | null;
+  shippingFee: number | null;
   status: string;
   createdAt: string;
   paystackReference: string | null;
@@ -33,6 +35,7 @@ interface OrderDetailProjection {
     line2: string | null;
     city: string;
     postcode: string;
+    county: string | null;
     country: string;
   } | null;
   products: Array<{
@@ -71,12 +74,14 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
       orderNumber,
       "email": coalesce(customerEmail, email),
       "total": coalesce(totalPrice, total),
+      subtotal,
+      shippingFee,
       status,
       createdAt,
       paystackReference,
       "address": coalesce(
-        shippingAddress{name, line1, line2, city, postcode, country},
-        address{name, line1, line2, city, postcode, country}
+        shippingAddress{name, line1, line2, city, postcode, county, country},
+        address{name, line1, line2, city, postcode, county, country}
       ),
       products[]->{
         _id,
@@ -239,9 +244,21 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
                   Subtotal
                 </span>
                 <span className="text-zinc-900 dark:text-zinc-100">
-                  {formatPrice(data.total)}
+                  {formatPrice(
+                    data.subtotal ?? data.total - (data.shippingFee ?? 0),
+                  )}
                 </span>
               </div>
+              {typeof data.shippingFee === "number" && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    Shipping
+                  </span>
+                  <span className="text-zinc-900 dark:text-zinc-100">
+                    {formatPrice(data.shippingFee)}
+                  </span>
+                </div>
+              )}
               <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
                 <div className="flex justify-between font-semibold">
                   <span className="text-zinc-900 dark:text-zinc-100">

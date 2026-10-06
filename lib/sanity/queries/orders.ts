@@ -41,6 +41,8 @@ export const ORDER_BY_ID_QUERY = defineQuery(`*[
   },
   quantities,
   productPrices,
+  subtotal,
+  shippingFee,
   "legacyItems": items[]{
     _key,
     quantity,
@@ -61,6 +63,17 @@ export const ORDER_BY_ID_QUERY = defineQuery(`*[
   status,
   "address": coalesce(shippingAddress, address),
   paystackReference,
+  createdAt
+}`);
+
+export const RECENT_ORDERS_QUERY = defineQuery(`*[
+  _type == "order"
+] | order(createdAt desc) [0...$limit] {
+  _id,
+  orderNumber,
+  "email": coalesce(customerEmail, email),
+  "total": coalesce(totalPrice, total),
+  status,
   createdAt
 }`);
 

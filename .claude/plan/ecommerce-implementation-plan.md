@@ -1,4 +1,4 @@
-# E-Commerce AI App Implementation Plan — Robotics Store (v2)
+# E-Commerce AI App Implementation Plan — Code Innovators Shop (v2)
 
 **Overview:** Build a complete AI-powered e-commerce platform using Next.js 16,
 Clerk authentication, Sanity for products/categories/brands/orders, Paystack

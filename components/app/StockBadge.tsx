@@ -18,6 +18,10 @@ export function StockBadge({ productId, stock, className }: StockBadgeProps) {
   const isAtMax = quantityInCart >= stock && stock > 0;
   const lowStock = checkLowStock(stock);
 
+  if (stock <= 0) {
+    return null;
+  }
+
   if (isAtMax) {
     return (
       <Badge
@@ -33,7 +37,7 @@ export function StockBadge({ productId, stock, className }: StockBadgeProps) {
     return (
       <Badge
         variant="secondary"
-        className={cn("w-fit bg-brand/10 text-brand", className)}
+        className={cn("w-fit bg-brand-mist text-brand-night", className)}
       >
         Only {stock} left in stock
       </Badge>

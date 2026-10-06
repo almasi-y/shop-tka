@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  KENYA_COUNTIES,
+  type KenyaCounty,
+} from "@/lib/shipping/kenya";
 
 const optionalAddressLine = z
   .string()
@@ -13,7 +17,26 @@ export const shippingAddressSchema = z.object({
   line2: optionalAddressLine,
   city: z.string().trim().min(2).max(100),
   postcode: optionalAddressLine,
-  country: z.string().trim().min(2).max(100),
+  county: z.enum(KENYA_COUNTIES),
+  country: z.literal("Kenya"),
 });
 
 export type ShippingAddress = z.infer<typeof shippingAddressSchema>;
+export type ShippingAddressForm = Omit<ShippingAddress, "county"> & {
+  county: KenyaCounty | "";
+};
+
+export const EMPTY_SHIPPING_ADDRESS: ShippingAddressForm = {
+  name: "",
+  line1: "",
+  line2: "",
+  city: "",
+  postcode: "",
+  county: "",
+  country: "Kenya",
+};
+
+export function parseShippingAddress(value: unknown): ShippingAddress | null {
+  const parsed = shippingAddressSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}

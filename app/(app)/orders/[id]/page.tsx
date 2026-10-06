@@ -10,7 +10,7 @@ import { getOrderStatus } from "@/lib/constants/orderStatus";
 import { formatPrice, formatDate } from "@/lib/utils";
 
 export const metadata = {
-  title: "Order Details | TechKidz Africa",
+  title: "Order Details | Code Innovators Shop",
   description: "View your order details",
 };
 
@@ -143,9 +143,22 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
                   Subtotal
                 </span>
                 <span className="text-zinc-900 dark:text-zinc-100">
-                  {formatPrice(order.total)}
+                  {formatPrice(
+                    order.subtotal ??
+                      (order.total ?? 0) - (order.shippingFee ?? 0),
+                  )}
                 </span>
               </div>
+              {typeof order.shippingFee === "number" && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    Shipping
+                  </span>
+                  <span className="text-zinc-900 dark:text-zinc-100">
+                    {formatPrice(order.shippingFee)}
+                  </span>
+                </div>
+              )}
               <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
                 <div className="flex justify-between font-semibold">
                   <span className="text-zinc-900 dark:text-zinc-100">
@@ -173,7 +186,13 @@ export default async function OrderDetailPage({ params }: OrderPageProps) {
                 {order.address.line1 && <p>{order.address.line1}</p>}
                 {order.address.line2 && <p>{order.address.line2}</p>}
                 <p>
-                  {[order.address.city, order.address.postcode]
+                  {[
+                    order.address.city,
+                    "county" in order.address
+                      ? order.address.county
+                      : undefined,
+                    order.address.postcode,
+                  ]
                     .filter(Boolean)
                     .join(", ")}
                 </p>

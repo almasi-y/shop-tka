@@ -3,6 +3,7 @@ import { sanityFetch } from "@/sanity/lib/live";
 import { PRODUCT_BY_SLUG_QUERY } from "@/lib/sanity/queries/products";
 import { ProductGallery } from "@/components/app/ProductGallery";
 import { ProductInfo } from "@/components/app/ProductInfo";
+import { ProductBreadcrumbs } from "@/components/app/ProductBreadcrumbs";
 
 interface ProductPageProps {
   params: Promise<{
@@ -35,11 +36,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* Image Gallery */}
-          <ProductGallery images={product.images} productName={product.name} />
+        <ProductBreadcrumbs
+          category={product.category}
+          productName={product.name}
+        />
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+          <div className="lg:sticky lg:top-14 lg:h-fit lg:self-start">
+            <ProductGallery
+              images={product.images}
+              productName={product.name}
+            />
+          </div>
 
-          {/* Product Info */}
           <ProductInfo product={product} />
         </div>
       </div>

@@ -11,6 +11,16 @@ export const categoryType = defineType({
   title: "Category",
   type: "document",
   icon: TagIcon,
+  orderings: [
+    {
+      title: "Sidebar order",
+      name: "sidebarOrder",
+      by: [
+        { field: "displayOrder", direction: "asc" },
+        { field: "title", direction: "asc" },
+      ],
+    },
+  ],
   fields: [
     defineField({
       name: "title",
@@ -35,6 +45,14 @@ export const categoryType = defineType({
       type: "text",
       rows: 3,
       description: "Short description used for category context and search.",
+    }),
+    defineField({
+      name: "displayOrder",
+      title: "Sidebar order",
+      type: "number",
+      description:
+        "Lower numbers appear first. Categories without a number appear afterward in alphabetical order.",
+      validation: (rule) => rule.integer().min(0),
     }),
     defineField({
       name: "icon",

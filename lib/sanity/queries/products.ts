@@ -1,4 +1,5 @@
 import { defineQuery } from "next-sanity";
+import { LOW_STOCK_THRESHOLD } from "@/lib/constants/stock";
 
 // ============================================
 // Shared Query Fragments (DRY)
@@ -60,6 +61,41 @@ const RELEVANCE_SCORE = `score(
   boost(description match $searchQuery + "*", 1)
 )`;
 
+// ============================================
+// All Products Query
+// ============================================
+
+/**
+ * Get all products with category expanded
+ * Used on landing page
+ */
+export const ALL_PRODUCTS_QUERY = defineQuery(`*[
+  _type == "product"
+] | order(coalesce(title, name) asc) {
+  _id,
+  "name": coalesce(title, name),
+  "slug": slug.current,
+  description,
+  price,
+  "images": images[]{
+    _key,
+    asset->{
+      _id,
+      url
+    },
+    hotspot
+  },
+  category->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  dimensions,
+  stock,
+  featured,
+  assemblyRequired
+}`);
+
 /**
  * Get featured products for homepage carousel
  */
@@ -87,6 +123,32 @@ export const FEATURED_PRODUCTS_QUERY = defineQuery(`*[
     "slug": slug.current
   },
   brand->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  stock
+}`);
+
+/**
+ * Get products by category slug
+ */
+export const PRODUCTS_BY_CATEGORY_QUERY = defineQuery(`*[
+  _type == "product"
+  && category->slug.current == $categorySlug
+] | order(coalesce(title, name) asc) {
+  _id,
+  "name": coalesce(title, name),
+  "slug": slug.current,
+  price,
+  "image": images[0]{
+    asset->{
+      _id,
+      url
+    },
+    hotspot
+  },
+  category->{
     _id,
     title,
     "slug": slug.current
@@ -138,6 +200,45 @@ export const PRODUCT_BY_SLUG_QUERY = defineQuery(`*[
 // Search & Filter Queries (Server-Side)
 // Uses GROQ score() for relevance ranking
 // ============================================
+
+/**
+ * Search products with relevance scoring
+ * Uses score() + boost() for better ranking
+ * Orders by relevance score descending
+ */
+export const SEARCH_PRODUCTS_QUERY = defineQuery(`*[
+  _type == "product"
+  && (
+    coalesce(title, name) match $searchQuery + "*"
+    || description match $searchQuery + "*"
+    || aiKeywords[] match $searchQuery + "*"
+    || aiTags[] match $searchQuery + "*"
+  )
+] | score(
+  boost(coalesce(title, name) match $searchQuery + "*", 3),
+  boost(aiKeywords[] match $searchQuery + "*", 2),
+  boost(aiTags[] match $searchQuery + "*", 2),
+  boost(description match $searchQuery + "*", 1)
+) | order(_score desc) {
+  _id,
+  _score,
+  "name": coalesce(title, name),
+  "slug": slug.current,
+  price,
+  "image": images[0]{
+    asset->{
+      _id,
+      url
+    },
+    hotspot
+  },
+  category->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  stock
+}`);
 
 /**
  * Filter products - ordered by name (A-Z)
@@ -197,6 +298,45 @@ export const PRODUCTS_BY_IDS_QUERY = defineQuery(`*[
     hotspot
   },
   stock
+}`);
+
+/**
+ * Get low stock products (admin)
+ * Uses LOW_STOCK_THRESHOLD constant for consistency
+ */
+export const LOW_STOCK_PRODUCTS_QUERY = defineQuery(`*[
+  _type == "product"
+  && stock > 0
+  && stock <= ${LOW_STOCK_THRESHOLD}
+] | order(stock asc) {
+  _id,
+  "name": coalesce(title, name),
+  "slug": slug.current,
+  stock,
+  "image": images[0]{
+    asset->{
+      _id,
+      url
+    }
+  }
+}`);
+
+/**
+ * Get out of stock products (admin)
+ */
+export const OUT_OF_STOCK_PRODUCTS_QUERY = defineQuery(`*[
+  _type == "product"
+  && stock == 0
+] | order(coalesce(title, name) asc) {
+  _id,
+  "name": coalesce(title, name),
+  "slug": slug.current,
+  "image": images[0]{
+    asset->{
+      _id,
+      url
+    }
+  }
 }`);
 
 // ============================================
