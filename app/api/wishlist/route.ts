@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import {
   WISHLIST_ITEM_QUERY,
+  WISHLIST_COUNT_QUERY,
   WISHLIST_PRODUCT_QUERY,
 } from "@/lib/sanity/queries/wishlist";
 import { writeClient } from "@/sanity/lib/client";
@@ -37,8 +38,15 @@ export async function GET(request: Request) {
       return privateJson({ error: "Authentication required" }, { status: 401 });
     }
 
-    const productId =
-      new URL(request.url).searchParams.get("productId")?.trim() ?? "";
+    const searchParams = new URL(request.url).searchParams;
+    if (!searchParams.has("productId")) {
+      const count = await writeClient.fetch(WISHLIST_COUNT_QUERY, {
+        clerkUserId: userId,
+      });
+      return privateJson({ count });
+    }
+
+    const productId = searchParams.get("productId")?.trim() ?? "";
     if (!isValidProductId(productId)) {
       return privateJson({ error: "Invalid product" }, { status: 400 });
     }

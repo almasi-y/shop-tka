@@ -42,7 +42,7 @@ function FilterLabel({
   children: React.ReactNode;
   isActive: boolean;
   filterKey: string;
-  onClear: () => void;
+  onClear?: () => void;
 }) {
   return (
     <div className="mb-2 flex items-center justify-between">
@@ -89,12 +89,10 @@ export function ProductFilters({
   const currentMaxPrice = Number(searchParams.get("maxPrice")) || 0;
   const currentInStock = searchParams.get("inStock") === "true";
 
-  const isCategoryActive = Boolean(currentCategory);
   const isBrandActive = currentBrands.length > 0;
   const isPriceActive = currentMinPrice > 0 || currentMaxPrice > 0;
   const isInStockActive = currentInStock;
   const activeFilterCount = [
-    isCategoryActive,
     isBrandActive,
     isPriceActive,
     isInStockActive,
@@ -123,13 +121,6 @@ export function ProductFilters({
       updateParams({ minPrice: null, maxPrice: null });
       return;
     }
-    if (key === "category") {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("category");
-      const query = params.toString();
-      router.push(query ? `/?${query}` : "/", { scroll: false });
-      return;
-    }
     updateParams({ [key]: null });
   };
 
@@ -137,7 +128,7 @@ export function ProductFilters({
     const params = new URLSearchParams();
     if (currentSearch) params.set("q", currentSearch);
     const query = params.toString();
-    router.push(query ? `/?${query}` : "/", { scroll: false });
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
   return (
@@ -165,9 +156,8 @@ export function ProductFilters({
 
       <div>
         <FilterLabel
-          isActive={isCategoryActive}
+          isActive={false}
           filterKey="category"
-          onClear={() => clearSingleFilter("category")}
         >
           Categories
         </FilterLabel>

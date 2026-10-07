@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import Autoplay from "embla-carousel-autoplay";
@@ -16,6 +17,10 @@ import { cn } from "@/lib/utils";
 import type { ACTIVE_PROMOTIONS_QUERY_RESULT } from "@/sanity.types";
 
 type Promotion = ACTIVE_PROMOTIONS_QUERY_RESULT[number];
+
+const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), {
+  ssr: false,
+});
 
 function getYouTubeVideoId(value: string | null) {
   if (!value) return null;
@@ -102,6 +107,9 @@ function PromotionSlide({
   eager: boolean;
 }) {
   const videoId = getYouTubeVideoId(promotion.youtubeUrl);
+  const muxAsset = promotion.muxVideo?.asset;
+  const muxPlaybackId =
+    muxAsset?.status === "ready" ? muxAsset.playbackId : null;
 
   return (
     <div className="relative h-64 w-full overflow-hidden rounded-xl md:h-[400px] lg:h-[420px]">
@@ -113,6 +121,22 @@ function PromotionSlide({
           loading={eager ? "eager" : "lazy"}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
+        />
+      ) : promotion.mediaType === "mux" && muxPlaybackId ? (
+        <MuxPlayer
+          playbackId={muxPlaybackId}
+          title={promotion.internalTitle ?? "Promotional video"}
+          metadata={{
+            video_title: promotion.internalTitle ?? "Promotional video",
+            video_id: promotion._id,
+          }}
+          autoPlay="muted"
+          muted
+          loop
+          playsInline
+          preload={eager ? "auto" : "metadata"}
+          className="h-full w-full"
+          style={{ width: "100%", height: "100%" }}
         />
       ) : (
         <PromotionImage promotion={promotion} eager={eager} />

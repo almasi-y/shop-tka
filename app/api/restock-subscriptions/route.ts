@@ -33,6 +33,13 @@ function hasWriteToken() {
   return Boolean(process.env.SANITY_API_WRITE_TOKEN);
 }
 
+function isSanityPermissionError(error: unknown) {
+  return (
+    error instanceof Error &&
+    /insufficient permissions|permission .+ required/i.test(error.message)
+  );
+}
+
 export async function GET(request: Request) {
   try {
     if (!hasWriteToken()) {
@@ -148,6 +155,15 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Restock subscription creation failed", error);
+    if (isSanityPermissionError(error)) {
+      return Response.json(
+        {
+          code: "NOTIFICATION_SERVICE_UNAVAILABLE",
+          error: "Notifications are temporarily unavailable. Please try again later.",
+        },
+        { status: 503 },
+      );
+    }
     return Response.json(
       { error: "Unable to register your notification" },
       { status: 500 },

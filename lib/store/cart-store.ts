@@ -1,24 +1,4 @@
 import { createStore } from "zustand/vanilla";
-import {
-  createJSONStorage,
-  persist,
-  type StateStorage,
-} from "zustand/middleware";
-
-const browserStorage: StateStorage = {
-  getItem: (name) =>
-    typeof window === "undefined" ? null : window.localStorage.getItem(name),
-  setItem: (name, value) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(name, value);
-    }
-  },
-  removeItem: (name) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(name);
-    }
-  },
-};
 
 // Types
 export interface CartItem {
@@ -33,6 +13,8 @@ export interface CartItem {
 export interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  ownerUserId: string | null;
+  isSynced: boolean;
 }
 
 export interface CartActions {
@@ -43,6 +25,11 @@ export interface CartActions {
   toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
+  replaceCart: (
+    ownerUserId: string | null,
+    items: CartItem[],
+    isSynced: boolean,
+  ) => void;
 }
 
 export type CartStore = CartState & CartActions;
@@ -51,70 +38,65 @@ export type CartStore = CartState & CartActions;
 export const defaultInitState: CartState = {
   items: [],
   isOpen: false,
+  ownerUserId: null,
+  isSynced: true,
 };
 
 /**
  * Cart store factory - creates new store instance per provider
- * Uses persist middleware with skipHydration for Next.js SSR compatibility
- * @see https://zustand.docs.pmnd.rs/guides/nextjs#hydration-and-asynchronous-storages
+ * Persistence is handled by the authenticated cart provider and the server API.
+ * The store itself never writes account data to shared browser storage.
  */
 export const createCartStore = (initState: CartState = defaultInitState) => {
-  return createStore<CartStore>()(
-    persist(
-      (set) => ({
-        ...initState,
+  return createStore<CartStore>()((set, get) => ({
+    ...initState,
 
-        addItem: (item, quantity = 1) =>
-          set((state) => {
-            const existing = state.items.find(
-              (i) => i.productId === item.productId
-            );
-            if (existing) {
-              return {
-                items: state.items.map((i) =>
-                  i.productId === item.productId
-                    ? { ...i, quantity: i.quantity + quantity }
-                    : i
-                ),
-              };
-            }
-            return { items: [...state.items, { ...item, quantity }] };
-          }),
-
-        removeItem: (productId) =>
-          set((state) => ({
-            items: state.items.filter((i) => i.productId !== productId),
-          })),
-
-        updateQuantity: (productId, quantity) =>
-          set((state) => {
-            if (quantity <= 0) {
-              return {
-                items: state.items.filter((i) => i.productId !== productId),
-              };
-            }
-            return {
-              items: state.items.map((i) =>
-                i.productId === productId ? { ...i, quantity } : i
-              ),
-            };
-          }),
-
-        clearCart: () => set({ items: [] }),
-        toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-        openCart: () => set({ isOpen: true }),
-        closeCart: () => set({ isOpen: false }),
+    addItem: (item, quantity = 1) =>
+      set((state) => {
+        if (!state.ownerUserId || !state.isSynced) return state;
+        const existing = state.items.find(
+          (i) => i.productId === item.productId,
+        );
+        if (existing) {
+          return {
+            items: state.items.map((i) =>
+              i.productId === item.productId
+                ? { ...i, quantity: i.quantity + quantity }
+                : i,
+            ),
+          };
+        }
+        return { items: [...state.items, { ...item, quantity }] };
       }),
-      {
-        name: "cart-storage",
-        // Resolve window only when storage is used so SSR cannot disable
-        // persistence for the store before client hydration begins.
-        storage: createJSONStorage(() => browserStorage),
-        // Skip automatic hydration - we'll trigger it manually on the client
-        skipHydration: true,
-        // Only persist items, not UI state like isOpen
-        partialize: (state) => ({ items: state.items }),
+
+    removeItem: (productId) =>
+      set((state) => ({
+        items: state.items.filter((i) => i.productId !== productId),
+      })),
+
+    updateQuantity: (productId, quantity) =>
+      set((state) => {
+        if (quantity <= 0) {
+          return {
+            items: state.items.filter((i) => i.productId !== productId),
+          };
+        }
+        return {
+          items: state.items.map((i) =>
+            i.productId === productId ? { ...i, quantity } : i,
+          ),
+        };
+      }),
+
+    clearCart: () => set({ items: [] }),
+    toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+    openCart: () => set({ isOpen: true }),
+    closeCart: () => {
+      if (get().isOpen) {
+        set({ isOpen: false });
       }
-    )
-  );
+    },
+    replaceCart: (ownerUserId, items, isSynced) =>
+      set({ ownerUserId, items, isSynced, isOpen: false }),
+  }));
 };

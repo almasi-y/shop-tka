@@ -11,6 +11,7 @@ export const productType = defineType({
     { name: "details", title: "Details", default: true },
     { name: "media", title: "Media" },
     { name: "inventory", title: "Inventory" },
+    { name: "returns", title: "Returns" },
   ],
   fields: [
     defineField({
@@ -193,6 +194,59 @@ export const productType = defineType({
       group: "inventory",
       initialValue: false,
       description: "Does this product require assembly?",
+    }),
+    defineField({
+      name: "returnEligibility",
+      title: "Return eligibility",
+      type: "string",
+      group: "returns",
+      initialValue: "standard",
+      description:
+        "Standard products accept policy reasons; defects-only products accept damaged, faulty, wrong, or misdescribed claims; non-returnable products cannot be requested online.",
+      options: {
+        layout: "radio",
+        list: [
+          { title: "Standard", value: "standard" },
+          { title: "Defects only", value: "defects_only" },
+          { title: "Non-returnable", value: "non_returnable" },
+        ],
+      },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "returnWindowDays",
+      title: "Return window",
+      type: "number",
+      group: "returns",
+      initialValue: 14,
+      options: {
+        layout: "radio",
+        list: [
+          { title: "7 days", value: 7 },
+          { title: "14 days", value: 14 },
+        ],
+      },
+      hidden: ({ document }) =>
+        document?.returnEligibility === "non_returnable",
+      validation: (rule) =>
+        rule.custom((value, context) => {
+          if (context.document?.returnEligibility === "non_returnable") {
+            return true;
+          }
+          return value === 7 || value === 14
+            ? true
+            : "Choose a 7- or 14-day return window";
+        }),
+    }),
+    defineField({
+      name: "returnPolicyNote",
+      title: "Product return note",
+      type: "text",
+      rows: 3,
+      group: "returns",
+      description:
+        "Optional product-specific exception or instruction shown to customers.",
+      validation: (rule) => rule.max(500),
     }),
   ],
   preview: {

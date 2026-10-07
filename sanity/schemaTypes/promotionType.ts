@@ -2,7 +2,7 @@ import { ImageIcon } from "@sanity/icons/Image";
 import { defineField, defineType } from "sanity";
 
 type PromotionParent = {
-  mediaType?: "image" | "youtube";
+  mediaType?: "image" | "youtube" | "mux";
   startsAt?: string;
 };
 
@@ -67,6 +67,7 @@ export const promotionType = defineType({
         list: [
           { title: "Image", value: "image" },
           { title: "YouTube video", value: "youtube" },
+          { title: "Uploaded video (Mux)", value: "mux" },
         ],
       },
       validation: (rule) => rule.required(),
@@ -76,7 +77,7 @@ export const promotionType = defineType({
       type: "image",
       options: { hotspot: true },
       hidden: ({ parent }) =>
-        (parent as PromotionParent | undefined)?.mediaType === "youtube",
+        (parent as PromotionParent | undefined)?.mediaType !== "image",
       fields: [
         defineField({
           name: "alt",
@@ -110,6 +111,28 @@ export const promotionType = defineType({
           if (parent?.mediaType !== "youtube") return true;
           if (!value) return "A YouTube URL is required for video promotions";
           return isYouTubeUrl(value) || "Enter a valid YouTube URL";
+        }),
+    }),
+    defineField({
+      name: "muxVideo",
+      title: "Uploaded video",
+      type: "mux.video",
+      description:
+        "Upload a promotional video or select an existing video from your Mux library.",
+      hidden: ({ parent }) =>
+        (parent as PromotionParent | undefined)?.mediaType !== "mux",
+      validation: (rule) =>
+        rule.custom((value, context) => {
+          const parent = context.parent as PromotionParent | undefined;
+          const hasAsset =
+            typeof value === "object" &&
+            value !== null &&
+            "asset" in value &&
+            Boolean(value.asset);
+
+          return parent?.mediaType !== "mux" || hasAsset
+            ? true
+            : "A Mux video is required for uploaded video promotions";
         }),
     }),
     defineField({
@@ -163,9 +186,16 @@ export const promotionType = defineType({
       media: "image",
     },
     prepare({ title, status, mediaType, media }) {
+      const mediaLabel =
+        mediaType === "youtube"
+          ? "YouTube"
+          : mediaType === "mux"
+            ? "Mux video"
+            : "Image";
+
       return {
         title,
-        subtitle: `${status === "active" ? "Active" : "Inactive"} · ${mediaType === "youtube" ? "YouTube" : "Image"}`,
+        subtitle: `${status === "active" ? "Active" : "Inactive"} · ${mediaLabel}`,
         media,
       };
     },

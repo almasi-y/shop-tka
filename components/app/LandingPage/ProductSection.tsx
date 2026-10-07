@@ -26,6 +26,7 @@ interface ProductSectionProps {
   promotions: ACTIVE_PROMOTIONS_QUERY_RESULT;
   searchQuery: string;
   categorySlug: string;
+  categoryTitle: string;
 }
 
 export function ProductSection({
@@ -37,6 +38,7 @@ export function ProductSection({
   promotions,
   searchQuery,
   categorySlug,
+  categoryTitle,
 }: ProductSectionProps) {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -83,16 +85,22 @@ export function ProductSection({
           )}
 
         <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {products.length} {products.length === 1 ? "product" : "products"}{" "}
-            found
-            {searchQuery && (
-              <span>
-                {" "}
-                for &quot;<span className="font-medium">{searchQuery}</span>&quot;
-              </span>
-            )}
-          </p>
+          {categoryTitle ? (
+            <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+              {categoryTitle}
+            </h1>
+          ) : (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              {products.length} {products.length === 1 ? "product" : "products"}{" "}
+              found
+              {searchQuery && (
+                <span>
+                  {" "}
+                  for &quot;<span className="font-medium">{searchQuery}</span>&quot;
+                </span>
+              )}
+            </p>
+          )}
 
           <Button
             variant="outline"
@@ -157,8 +165,9 @@ export function ProductSection({
                 className="h-11 w-full"
                 onClick={() => setMobileFiltersOpen(false)}
               >
-                View {products.length}{" "}
-                {products.length === 1 ? "product" : "products"}
+                {categoryTitle
+                  ? `View ${categoryTitle}`
+                  : `View ${products.length} ${products.length === 1 ? "product" : "products"}`}
               </Button>
             </div>
           </div>

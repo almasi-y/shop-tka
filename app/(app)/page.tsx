@@ -150,6 +150,7 @@ export async function CatalogPage({
           promotions={promotions}
           searchQuery={searchQuery}
           categorySlug={categorySlug}
+          categoryTitle={selectedCategory?.title ?? ""}
         />
       </div>
     </div>

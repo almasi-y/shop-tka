@@ -7,6 +7,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { useStore } from "zustand";
 import {
   createCartStore,
@@ -29,23 +30,96 @@ interface CartStoreProviderProps {
 
 /**
  * Cart store provider - creates one store instance per provider
- * Manually triggers rehydration from localStorage on the client
+ * Loads and saves only the active Clerk user's server-side cart.
  * Wrap your app/(app) layout with this provider
- * @see https://zustand.docs.pmnd.rs/guides/nextjs#hydration-and-asynchronous-storages
  */
 export const CartStoreProvider = ({
   children,
   initialState,
 }: CartStoreProviderProps) => {
+  const { isLoaded, userId } = useAuth();
   const [store] = useState(() =>
     createCartStore(initialState ?? defaultInitState),
   );
 
-  // Manually trigger rehydration on the client after mount
-  // This prevents SSR hydration mismatches since localStorage isn't available on server
   useEffect(() => {
-    void store.persist.rehydrate();
-  }, [store]);
+    // This legacy key was shared by every account using the browser. It must
+    // never be restored now that carts are account-scoped.
+    window.localStorage.removeItem("cart-storage");
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!userId) {
+      store.getState().replaceCart(null, [], true);
+      return;
+    }
+
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    let saveQueue = Promise.resolve();
+    store.getState().replaceCart(userId, [], false);
+
+    function beginSaving() {
+      if (cancelled) return;
+      unsubscribe = store.subscribe((state, previousState) => {
+        if (
+          state.items === previousState.items ||
+          state.ownerUserId !== userId ||
+          !state.isSynced
+        ) {
+          return;
+        }
+
+        const items = state.items.map(({ productId, quantity }) => ({
+          productId,
+          quantity,
+        }));
+        saveQueue = saveQueue
+          .then(async () => {
+            const saveResponse = await fetch("/api/cart", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ownerUserId: userId, items }),
+            });
+            if (!saveResponse.ok) {
+              const result = (await saveResponse.json()) as { error?: string };
+              throw new Error(result.error ?? "Unable to save cart");
+            }
+          })
+          .catch((error: unknown) => {
+            console.error("Cart synchronization failed", error);
+          });
+      });
+    }
+
+    async function loadCart() {
+      try {
+        const response = await fetch("/api/cart", { cache: "no-store" });
+        const result = (await response.json()) as {
+          items?: CartState["items"];
+          error?: string;
+        };
+        if (!response.ok) throw new Error(result.error ?? "Unable to load cart");
+        if (cancelled) return;
+
+        store.getState().replaceCart(userId!, result.items ?? [], true);
+        beginSaving();
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Cart loading failed", error);
+        store.getState().replaceCart(userId!, [], true);
+        beginSaving();
+      }
+    }
+
+    void loadCart();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [isLoaded, store, userId]);
 
   return (
     <CartStoreContext.Provider value={store}>
@@ -76,7 +150,26 @@ export const useCartStore = <T,>(selector: (store: CartStore) => T): T => {
 /**
  * Get all cart items
  */
-export const useCartItems = () => useCartStore((state) => state.items);
+const EMPTY_CART_ITEMS: CartState["items"] = [];
+
+export const useCartItems = () => {
+  const { isLoaded, userId } = useAuth();
+  return useCartStore((state) =>
+    isLoaded &&
+    userId &&
+    state.ownerUserId === userId &&
+    state.isSynced
+      ? state.items
+      : EMPTY_CART_ITEMS,
+  );
+};
+
+export const useCartReady = () => {
+  const { isLoaded, userId } = useAuth();
+  const ownerUserId = useCartStore((state) => state.ownerUserId);
+  const isSynced = useCartStore((state) => state.isSynced);
+  return Boolean(isLoaded && (!userId || (ownerUserId === userId && isSynced)));
+};
 
 /**
  * Get cart open state
@@ -87,25 +180,22 @@ export const useCartIsOpen = () => useCartStore((state) => state.isOpen);
  * Get total number of items in cart
  */
 export const useTotalItems = () =>
-  useCartStore((state) =>
-    state.items.reduce((sum, item) => sum + item.quantity, 0),
-  );
+  useCartItems().reduce((sum, item) => sum + item.quantity, 0);
 
 /**
  * Get total price of cart
  */
 export const useTotalPrice = () =>
-  useCartStore((state) =>
-    state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+  useCartItems().reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
   );
 
 /**
  * Find a specific item in cart
  */
 export const useCartItem = (productId: string) =>
-  useCartStore((state) =>
-    state.items.find((item) => item.productId === productId),
-  );
+  useCartItems().find((item) => item.productId === productId);
 
 /**
  * Get all cart actions

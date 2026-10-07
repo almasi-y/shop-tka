@@ -16,6 +16,12 @@ export const WISHLIST_ITEM_QUERY = defineQuery(`*[
   createdAt
 }`);
 
+export const WISHLIST_COUNT_QUERY = defineQuery(`count(*[
+  _type == "wishlistItem"
+  && clerkUserId == $clerkUserId
+  && defined(product->._id)
+])`);
+
 export const WISHLIST_BY_USER_QUERY = defineQuery(`*[
   _type == "wishlistItem"
   && clerkUserId == $clerkUserId

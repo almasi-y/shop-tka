@@ -6,6 +6,7 @@ import { Heart, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { notifyWishlistUpdated } from "@/lib/wishlist/events";
 
 interface WishlistButtonProps {
   productId: string;
@@ -18,8 +19,11 @@ export function WishlistButton({
   productName,
   className,
 }: WishlistButtonProps) {
-  const { isLoaded, isSignedIn } = useAuth();
-  const [wishlisted, setWishlisted] = useState(false);
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const [wishlistState, setWishlistState] = useState<{
+    userId: string;
+    wishlisted: boolean;
+  } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -36,17 +40,29 @@ export function WishlistButton({
         if (!response.ok) throw new Error("Unable to check wishlist");
         return (await response.json()) as { wishlisted?: boolean };
       })
-      .then((result) => setWishlisted(Boolean(result.wishlisted)))
+      .then((result) => {
+        if (userId) {
+          setWishlistState({
+            userId,
+            wishlisted: Boolean(result.wishlisted),
+          });
+        }
+      })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         console.error("Wishlist status request failed", error);
       })
 
     return () => controller.abort();
-  }, [isLoaded, isSignedIn, productId]);
+  }, [isLoaded, isSignedIn, productId, userId]);
 
   async function toggleWishlist() {
-    const isWishlisted = Boolean(isSignedIn && wishlisted);
+    const isWishlisted = Boolean(
+      isSignedIn &&
+        userId &&
+        wishlistState?.userId === userId &&
+        wishlistState.wishlisted,
+    );
     const nextWishlisted = !isWishlisted;
     setIsSaving(true);
 
@@ -65,7 +81,13 @@ export function WishlistButton({
         throw new Error(result.error ?? "Unable to update wishlist");
       }
 
-      setWishlisted(Boolean(result.wishlisted));
+      if (userId) {
+        setWishlistState({
+          userId,
+          wishlisted: Boolean(result.wishlisted),
+        });
+      }
+      notifyWishlistUpdated();
       toast.success(
         nextWishlisted
           ? `${productName} saved to your wishlist`
@@ -80,7 +102,12 @@ export function WishlistButton({
     }
   }
 
-  const isWishlisted = Boolean(isSignedIn && wishlisted);
+  const isWishlisted = Boolean(
+    isSignedIn &&
+      userId &&
+      wishlistState?.userId === userId &&
+      wishlistState.wishlisted,
+  );
   const button = (
     <Button
       type="button"

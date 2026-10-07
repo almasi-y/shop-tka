@@ -39,6 +39,25 @@ export function ProductInfo({ product }: ProductInfoProps) {
         {formatPrice(product.price)}
       </p>
 
+      {/* Primary product actions */}
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <AddToCartButton
+          productId={product._id}
+          slug={product.slug ?? undefined}
+          name={product.name ?? "Unknown Product"}
+          price={product.price ?? 0}
+          image={imageUrl ?? undefined}
+          stock={product.stock ?? 0}
+          enableRestockNotification
+          className="min-w-0 px-2 text-xs sm:text-sm"
+        />
+        <WishlistButton
+          productId={product._id}
+          productName={product.name ?? "this product"}
+          className="h-11 min-w-0 px-2 text-xs sm:text-sm"
+        />
+      </div>
+
       {/* Description */}
       {product.description && (
         <p className="mt-4 whitespace-pre-line text-zinc-600 dark:text-zinc-400">
@@ -69,26 +88,8 @@ export function ProductInfo({ product }: ProductInfoProps) {
         </div>
       )}
 
-      {/* Stock & Add to Cart */}
-      <div className="mt-6 flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-3">
-          <AddToCartButton
-            productId={product._id}
-            slug={product.slug ?? undefined}
-            name={product.name ?? "Unknown Product"}
-            price={product.price ?? 0}
-            image={imageUrl ?? undefined}
-            stock={product.stock ?? 0}
-            enableRestockNotification
-            className="min-w-0 px-2 text-xs sm:text-sm"
-          />
-          <WishlistButton
-            productId={product._id}
-            productName={product.name ?? "this product"}
-            className="h-11 min-w-0 px-2 text-xs sm:text-sm"
-          />
-        </div>
-        {AI_ASSISTANT_ENABLED && (
+      {AI_ASSISTANT_ENABLED && (
+        <div className="mt-6">
           <AskAISimilarButton
             productName={product.name ?? "this product"}
             category={product.category?.title}
@@ -96,56 +97,50 @@ export function ProductInfo({ product }: ProductInfoProps) {
             color={product.color}
             size={product.size}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
         <ProductShareActions productName={product.name ?? "this product"} />
       </div>
 
       {/* Metadata */}
-      <div className="mt-6 space-y-2 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-        {product.brand && (
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400">Brand</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {product.brand.title}
-            </span>
-          </div>
-        )}
-        {product.color && (
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400">Color</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {product.color}
-            </span>
-          </div>
-        )}
-        {product.size && (
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400">Size</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {product.size}
-            </span>
-          </div>
-        )}
-        {product.dimensions && (
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400">Dimensions</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {product.dimensions}
-            </span>
-          </div>
-        )}
-        {product.assemblyRequired !== null && (
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-500 dark:text-zinc-400">Assembly</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {product.assemblyRequired ? "Required" : "Not required"}
-            </span>
-          </div>
-        )}
-      </div>
+      {(product.brand || product.color || product.size || product.dimensions) && (
+        <div className="mt-6 space-y-2 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+          {product.brand && (
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400">Brand</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {product.brand.title}
+              </span>
+            </div>
+          )}
+          {product.color && (
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400">Color</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {product.color}
+              </span>
+            </div>
+          )}
+          {product.size && (
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400">Size</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {product.size}
+              </span>
+            </div>
+          )}
+          {product.dimensions && (
+            <div className="flex justify-between text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400">Dimensions</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {product.dimensions}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

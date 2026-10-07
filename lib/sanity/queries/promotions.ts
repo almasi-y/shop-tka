@@ -23,5 +23,16 @@ export const ACTIVE_PROMOTIONS_QUERY = defineQuery(`*[
     crop
   },
   youtubeUrl,
+  muxVideo {
+    asset->{
+      playbackId,
+      status,
+      filename,
+      data {
+        aspect_ratio,
+        duration
+      }
+    }
+  },
   destinationUrl
 }`);

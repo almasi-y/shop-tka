@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -32,6 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useCartActions, useTotalItems } from "@/lib/store/cart-store-provider";
 import { useChatActions } from "@/lib/store/chat-store-provider";
+import { WISHLIST_UPDATED_EVENT } from "@/lib/wishlist/events";
 
 const AI_ASSISTANT_ENABLED =
   process.env.NEXT_PUBLIC_AI_ASSISTANT_ENABLED === "true";
@@ -104,12 +105,9 @@ function AccountMenu() {
             <MapPin aria-hidden="true" />
             My Address
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem render={<Link href="/returns" />}>
             <RotateCcw aria-hidden="true" />
             My Returns
-            <span className="ml-auto text-[0.625rem] font-semibold uppercase tracking-wide text-muted-foreground">
-              Soon
-            </span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
 
@@ -127,6 +125,100 @@ function AccountMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function WishlistControl() {
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const [countState, setCountState] = useState<{
+    userId: string;
+    count: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !userId) return;
+
+    const controller = new AbortController();
+    const refreshCount = async () => {
+      try {
+        const response = await fetch("/api/wishlist", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const result = (await response.json()) as {
+          count?: number;
+          error?: string;
+        };
+        if (!response.ok) {
+          throw new Error(result.error ?? "Unable to load wishlist count");
+        }
+        setCountState({
+          userId,
+          count: Math.max(0, result.count ?? 0),
+        });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        console.error("Wishlist count request failed", error);
+      }
+    };
+
+    void refreshCount();
+    window.addEventListener(WISHLIST_UPDATED_EVENT, refreshCount);
+    return () => {
+      controller.abort();
+      window.removeEventListener(WISHLIST_UPDATED_EVENT, refreshCount);
+    };
+  }, [isLoaded, isSignedIn, userId]);
+
+  const count =
+    isSignedIn && userId && countState?.userId === userId
+      ? countState.count
+      : 0;
+
+  if (isSignedIn) {
+    return (
+      <Link
+        href="/wishlist"
+        aria-label={
+          count > 0
+            ? `Open wishlist, ${count} ${count === 1 ? "item" : "items"}`
+            : "Open wishlist"
+        }
+        className={buttonVariants({
+          variant: "ghost",
+          size: "icon",
+          className: "relative overflow-visible",
+        })}
+      >
+        <Heart className="size-5" />
+        {count > 0 && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-blue px-1 text-[0.625rem] font-bold leading-none text-white shadow-md ring-2 ring-white dark:ring-zinc-950"
+          >
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
+      </Link>
+    );
+  }
+
+  return (
+    <SignInButton
+      mode="modal"
+      withSignUp
+      forceRedirectUrl="/wishlist"
+      signUpForceRedirectUrl="/wishlist"
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        disabled={!isLoaded}
+        aria-label="Sign in to view wishlist"
+      >
+        <Heart className="size-5" />
+      </Button>
+    </SignInButton>
   );
 }
 
@@ -182,21 +274,7 @@ export function Header() {
               <MessageCircle className="size-5" />
             </Button>
           )}
-          {isSignedIn ? (
-            <Link
-              href="/wishlist"
-              aria-label="Open wishlist"
-              className={buttonVariants({ variant: "ghost", size: "icon" })}
-            >
-              <Heart className="size-5" />
-            </Link>
-          ) : (
-            <SignInButton mode="modal" withSignUp forceRedirectUrl="/wishlist" signUpForceRedirectUrl="/wishlist">
-              <Button variant="ghost" size="icon" aria-label="Sign in to view wishlist">
-                <Heart className="size-5" />
-              </Button>
-            </SignInButton>
-          )}
+          <WishlistControl />
           <Button
             variant="ghost"
             size="icon"
@@ -212,7 +290,7 @@ export function Header() {
             {totalItems > 0 && (
               <span
                 aria-hidden="true"
-                className="absolute right-0 top-0 z-10 flex size-4.5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full bg-brand-purple px-1 text-[0.625rem] font-bold leading-none text-white shadow-sm ring-2 ring-white dark:ring-zinc-950"
+                className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-blue px-1 text-[0.625rem] font-bold leading-none text-white shadow-md ring-2 ring-white dark:ring-zinc-950"
               >
                 {totalItems > 99 ? "99+" : totalItems}
               </span>

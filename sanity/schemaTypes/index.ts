@@ -8,6 +8,8 @@ import { promotionType } from './promotionType'
 import { restockSubscriptionType } from './restockSubscriptionType'
 import { wishlistItemType } from './wishlistItemType'
 import { shippingSettingsType } from './shippingSettingsType'
+import { returnRequestType } from './returnRequestType'
+import { shoppingCartType } from './shoppingCartType'
 
   
 export const schema: { types: SchemaTypeDefinition[] } = {
@@ -21,5 +23,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     restockSubscriptionType,
     wishlistItemType,
     shippingSettingsType,
+    returnRequestType,
+    shoppingCartType,
   ],
 }

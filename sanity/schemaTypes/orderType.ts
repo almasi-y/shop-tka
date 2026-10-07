@@ -337,6 +337,20 @@ export const orderType = defineType({
       initialValue: () => new Date().toISOString(),
       validation: (rule) => rule.required(),
     }),
+    defineField({
+      name: "shippedAt",
+      type: "datetime",
+      group: "details",
+      readOnly: true,
+      description: "Recorded when an admin first marks the order as shipped.",
+    }),
+    defineField({
+      name: "deliveredAt",
+      type: "datetime",
+      group: "details",
+      readOnly: true,
+      description: "Starts the product return window.",
+    }),
   ],
   preview: {
     select: {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { notifyWishlistUpdated } from "@/lib/wishlist/events";
 
 export function WishlistRemoveButton({ productId }: { productId: string }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export function WishlistRemoveButton({ productId }: { productId: string }) {
         throw new Error(result.error ?? "Unable to remove product");
       }
 
+      notifyWishlistUpdated();
       toast.success("Removed from your wishlist");
       router.refresh();
     } catch (error) {

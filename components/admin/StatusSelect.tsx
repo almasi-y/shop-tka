@@ -22,7 +22,11 @@ type StatusSelectProps = DocumentHandle;
 
 function StatusSelectContent(handle: StatusSelectProps) {
   const { data: status } = useDocument({ ...handle, path: "status" });
+  const { data: shippedAt } = useDocument({ ...handle, path: "shippedAt" });
+  const { data: deliveredAt } = useDocument({ ...handle, path: "deliveredAt" });
   const editStatus = useEditDocument({ ...handle, path: "status" });
+  const editShippedAt = useEditDocument({ ...handle, path: "shippedAt" });
+  const editDeliveredAt = useEditDocument({ ...handle, path: "deliveredAt" });
   const apply = useApplyDocumentActions();
 
   const currentStatus = (status as string) ?? "paid";
@@ -31,7 +35,14 @@ function StatusSelectContent(handle: StatusSelectProps) {
 
   const handleStatusChange = async (value: string | null) => {
     if (!value) return;
+    const now = new Date().toISOString();
     editStatus(value);
+    if ((value === "shipped" || value === "delivered") && !shippedAt) {
+      editShippedAt(now);
+    }
+    if (value === "delivered" && !deliveredAt) {
+      editDeliveredAt(now);
+    }
     // Auto-publish status changes so they take effect immediately
     await apply(publishDocument(handle));
   };
