@@ -73,7 +73,7 @@ export function ProductSection({
       <div className="min-w-0 space-y-6">
         {!categorySlug &&
           (promotions.length > 0 || featuredProducts.length > 0) && (
-            <div className="min-w-0 overflow-hidden rounded-xl">
+            <div className="min-w-0 overflow-hidden">
               <Suspense fallback={<FeaturedCarouselSkeleton />}>
                 {promotions.length > 0 ? (
                   <PromotionCarousel promotions={promotions} />
@@ -89,17 +89,15 @@ export function ProductSection({
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
               {categoryTitle}
             </h1>
-          ) : (
+          ) : searchQuery ? (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              {products.length} {products.length === 1 ? "product" : "products"}{" "}
-              found
-              {searchQuery && (
-                <span>
-                  {" "}
-                  for &quot;<span className="font-medium">{searchQuery}</span>&quot;
-                </span>
-              )}
+              {products.length} {products.length === 1 ? "result" : "results"}{" "}
+              for &quot;<span className="font-medium">{searchQuery}</span>&quot;
             </p>
+          ) : (
+            <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+              Featured
+            </h1>
           )}
 
           <Button

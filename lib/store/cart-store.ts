@@ -44,8 +44,8 @@ export const defaultInitState: CartState = {
 
 /**
  * Cart store factory - creates new store instance per provider
- * Persistence is handled by the authenticated cart provider and the server API.
- * The store itself never writes account data to shared browser storage.
+ * Persistence is handled by the cart provider. Guest carts use browser storage,
+ * while authenticated carts use the server API.
  */
 export const createCartStore = (initState: CartState = defaultInitState) => {
   return createStore<CartStore>()((set, get) => ({
@@ -53,7 +53,7 @@ export const createCartStore = (initState: CartState = defaultInitState) => {
 
     addItem: (item, quantity = 1) =>
       set((state) => {
-        if (!state.ownerUserId || !state.isSynced) return state;
+        if (!state.isSynced) return state;
         const existing = state.items.find(
           (i) => i.productId === item.productId,
         );

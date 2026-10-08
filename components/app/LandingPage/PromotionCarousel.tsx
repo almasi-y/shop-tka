@@ -112,12 +112,12 @@ function PromotionSlide({
     muxAsset?.status === "ready" ? muxAsset.playbackId : null;
 
   return (
-    <div className="relative h-64 w-full overflow-hidden rounded-xl md:h-[400px] lg:h-[420px]">
+    <div className="relative h-[180px] w-full overflow-hidden sm:h-[220px] md:h-[280px] lg:h-[300px]">
       {promotion.mediaType === "youtube" && videoId ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&loop=1&playlist=${videoId}&playsinline=1&rel=0`}
           title={promotion.internalTitle ?? "Promotional video"}
-          className="h-full w-full rounded-xl border-0"
+          className="h-full w-full border-0"
           loading={eager ? "eager" : "lazy"}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
@@ -133,10 +133,11 @@ function PromotionSlide({
           autoPlay="muted"
           muted
           loop
+          nohotkeys
           playsInline
           preload={eager ? "auto" : "metadata"}
           className="h-full w-full"
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "100%", "--controls": "none" }}
         />
       ) : (
         <PromotionImage promotion={promotion} eager={eager} />
@@ -184,18 +185,18 @@ export function PromotionCarousel({
   if (count === 0) return null;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl">
+    <div className="relative w-full overflow-hidden">
       <Carousel
         setApi={setApi}
         opts={{ loop: count > 1, align: "start" }}
         plugins={plugins}
-        className="w-full overflow-hidden rounded-xl"
+        className="w-full overflow-hidden"
       >
         <CarouselContent className="-ml-0">
           {promotions.map((promotion, index) => (
             <CarouselItem
               key={promotion._id}
-              className="overflow-hidden rounded-xl pl-0"
+              className="overflow-hidden pl-0"
             >
               <PromotionSlide promotion={promotion} eager={index === 0} />
             </CarouselItem>

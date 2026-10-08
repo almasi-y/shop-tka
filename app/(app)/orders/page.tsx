@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { serverReadClient } from "@/sanity/lib/server-client";
 import { ORDERS_BY_USER_QUERY } from "@/lib/sanity/queries/orders";
-import { getOrderStatus } from "@/lib/constants/orderStatus";
+import { getFulfillmentStatus } from "@/lib/constants/orderTracking";
 import { formatPrice, formatDate, formatOrderNumber } from "@/lib/utils";
 import { StackedProductImages } from "@/components/app/StackedProductImages";
 
@@ -48,7 +48,7 @@ export default async function OrdersPage() {
 
       <div className="space-y-4">
         {orders.map((order) => {
-          const status = getOrderStatus(order.status);
+          const status = getFulfillmentStatus(order.fulfillmentStatus);
           const StatusIcon = status.icon;
           const images = (order.itemImages ?? []).flatMap((url) =>
             url ? [String(url)] : [],

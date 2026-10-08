@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type AddressEditorProps = DocumentHandle;
+interface AddressEditorProps extends DocumentHandle {
+  disabled?: boolean;
+}
 
 function AddressField({
   handle,
@@ -43,33 +45,71 @@ function AddressField({
   );
 }
 
-function AddressEditorContent(handle: AddressEditorProps) {
+function AddressEditorContent({
+  disabled = false,
+  ...handle
+}: AddressEditorProps) {
   return (
-    <div className="space-y-3">
+    <fieldset disabled={disabled} className="space-y-3 disabled:opacity-60">
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <AddressField handle={handle} field="name" label="Full Name" placeholder="John Doe" />
+        <AddressField
+          handle={handle}
+          field="name"
+          label="Full Name"
+          placeholder="John Doe"
+        />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <AddressField handle={handle} field="line1" label="Address Line 1" placeholder="123 Main St" />
+        <AddressField
+          handle={handle}
+          field="line1"
+          label="Address Line 1"
+          placeholder="123 Main St"
+        />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <AddressField handle={handle} field="line2" label="Address Line 2" placeholder="Apt 4B (optional)" />
+        <AddressField
+          handle={handle}
+          field="line2"
+          label="Address Line 2"
+          placeholder="Apt 4B (optional)"
+        />
       </Suspense>
       <div className="grid grid-cols-2 gap-3">
         <Suspense fallback={<Skeleton className="h-16" />}>
-          <AddressField handle={handle} field="city" label="City" placeholder="Nairobi" />
+          <AddressField
+            handle={handle}
+            field="city"
+            label="City"
+            placeholder="Nairobi"
+          />
         </Suspense>
         <Suspense fallback={<Skeleton className="h-16" />}>
-          <AddressField handle={handle} field="postcode" label="Postal code" placeholder="00100" />
+          <AddressField
+            handle={handle}
+            field="postcode"
+            label="Postal code"
+            placeholder="00100"
+          />
         </Suspense>
       </div>
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <AddressField handle={handle} field="county" label="County" placeholder="Mombasa" />
+        <AddressField
+          handle={handle}
+          field="county"
+          label="County"
+          placeholder="Mombasa"
+        />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <AddressField handle={handle} field="country" label="Country" placeholder="Kenya" />
+        <AddressField
+          handle={handle}
+          field="country"
+          label="Country"
+          placeholder="Kenya"
+        />
       </Suspense>
-    </div>
+    </fieldset>
   );
 }
 

@@ -16,6 +16,65 @@ import {
   defaultInitState,
 } from "./cart-store";
 
+const GUEST_CART_STORAGE_KEY = "guest-cart-v1";
+
+function readGuestCart(): CartState["items"] {
+  try {
+    const value = window.localStorage.getItem(GUEST_CART_STORAGE_KEY);
+    if (!value) return [];
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.flatMap((item) => {
+      if (
+        typeof item !== "object" ||
+        item === null ||
+        !("productId" in item) ||
+        !("name" in item) ||
+        !("price" in item) ||
+        !("quantity" in item) ||
+        typeof item.productId !== "string" ||
+        typeof item.name !== "string" ||
+        typeof item.price !== "number" ||
+        typeof item.quantity !== "number"
+      ) {
+        return [];
+      }
+
+      return [{
+        productId: item.productId,
+        name: item.name,
+        price: item.price,
+        quantity: Math.max(1, Math.min(1000, Math.floor(item.quantity))),
+        image: "image" in item && typeof item.image === "string" ? item.image : undefined,
+        slug: "slug" in item && typeof item.slug === "string" ? item.slug : undefined,
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function mergeCartItems(
+  accountItems: CartState["items"],
+  guestItems: CartState["items"],
+) {
+  const merged = new Map(accountItems.map((item) => [item.productId, item]));
+  for (const guestItem of guestItems) {
+    const existing = merged.get(guestItem.productId);
+    merged.set(
+      guestItem.productId,
+      existing
+        ? {
+            ...existing,
+            quantity: Math.min(1000, existing.quantity + guestItem.quantity),
+          }
+        : guestItem,
+    );
+  }
+  return [...merged.values()];
+}
+
 // Store API type
 export type CartStoreApi = ReturnType<typeof createCartStore>;
 
@@ -30,7 +89,8 @@ interface CartStoreProviderProps {
 
 /**
  * Cart store provider - creates one store instance per provider
- * Loads and saves only the active Clerk user's server-side cart.
+ * Persists guest carts in this browser and authenticated carts on the server.
+ * Guest items are merged into the account cart after sign-in.
  * Wrap your app/(app) layout with this provider
  */
 export const CartStoreProvider = ({
@@ -43,17 +103,23 @@ export const CartStoreProvider = ({
   );
 
   useEffect(() => {
-    // This legacy key was shared by every account using the browser. It must
-    // never be restored now that carts are account-scoped.
-    window.localStorage.removeItem("cart-storage");
-  }, []);
-
-  useEffect(() => {
     if (!isLoaded) return;
 
     if (!userId) {
-      store.getState().replaceCart(null, [], true);
-      return;
+      store.getState().replaceCart(null, readGuestCart(), true);
+      return store.subscribe((state, previousState) => {
+        if (
+          state.items === previousState.items ||
+          state.ownerUserId !== null ||
+          !state.isSynced
+        ) {
+          return;
+        }
+        window.localStorage.setItem(
+          GUEST_CART_STORAGE_KEY,
+          JSON.stringify(state.items),
+        );
+      });
     }
 
     let cancelled = false;
@@ -94,6 +160,24 @@ export const CartStoreProvider = ({
       });
     }
 
+    async function saveCart(items: CartState["items"]) {
+      const saveResponse = await fetch("/api/cart", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerUserId: userId,
+          items: items.map(({ productId, quantity }) => ({
+            productId,
+            quantity,
+          })),
+        }),
+      });
+      if (!saveResponse.ok) {
+        const result = (await saveResponse.json()) as { error?: string };
+        throw new Error(result.error ?? "Unable to save cart");
+      }
+    }
+
     async function loadCart() {
       try {
         const response = await fetch("/api/cart", { cache: "no-store" });
@@ -104,8 +188,20 @@ export const CartStoreProvider = ({
         if (!response.ok) throw new Error(result.error ?? "Unable to load cart");
         if (cancelled) return;
 
-        store.getState().replaceCart(userId!, result.items ?? [], true);
+        const guestItems = readGuestCart();
+        const mergedItems = mergeCartItems(result.items ?? [], guestItems);
+        store.getState().replaceCart(userId!, mergedItems, true);
         beginSaving();
+
+        if (guestItems.length > 0) {
+          try {
+            await saveCart(mergedItems);
+            window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+          } catch (error) {
+            // Keep the browser copy so the merge can be retried safely.
+            console.error("Guest cart merge failed", error);
+          }
+        }
       } catch (error) {
         if (cancelled) return;
         console.error("Cart loading failed", error);
@@ -156,9 +252,8 @@ export const useCartItems = () => {
   const { isLoaded, userId } = useAuth();
   return useCartStore((state) =>
     isLoaded &&
-    userId &&
-    state.ownerUserId === userId &&
-    state.isSynced
+    state.isSynced &&
+    (userId ? state.ownerUserId === userId : state.ownerUserId === null)
       ? state.items
       : EMPTY_CART_ITEMS,
   );
@@ -168,7 +263,11 @@ export const useCartReady = () => {
   const { isLoaded, userId } = useAuth();
   const ownerUserId = useCartStore((state) => state.ownerUserId);
   const isSynced = useCartStore((state) => state.isSynced);
-  return Boolean(isLoaded && (!userId || (ownerUserId === userId && isSynced)));
+  return Boolean(
+    isLoaded &&
+      isSynced &&
+      (userId ? ownerUserId === userId : ownerUserId === null),
+  );
 };
 
 /**

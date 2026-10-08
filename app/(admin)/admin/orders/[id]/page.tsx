@@ -12,13 +12,21 @@ import {
   Edit2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusSelect } from "@/components/admin/StatusSelect";
 import { AddressEditor } from "@/components/admin/AddressEditor";
+import {
+  OrderTrackingManager,
+  type AdminTrackingData,
+  type AdminTrackingEvent,
+} from "@/components/admin/OrderTrackingManager";
 import {
   PublishButton,
   RevertButton,
 } from "@/components/admin/PublishButton";
 import { formatPrice, formatDate } from "@/lib/utils";
+import {
+  getFulfillmentStatus,
+  isShippingAddressLocked,
+} from "@/lib/constants/orderTracking";
 
 interface OrderDetailProjection {
   orderNumber: string;
@@ -27,6 +35,14 @@ interface OrderDetailProjection {
   subtotal: number | null;
   shippingFee: number | null;
   status: string;
+  trackingNumber: string | null;
+  fulfillmentStatus: string | null;
+  courierName: string | null;
+  courierTrackingNumber: string | null;
+  courierTrackingUrl: string | null;
+  estimatedDeliveryAt: string | null;
+  currentLocation: string | null;
+  trackingEvents: AdminTrackingEvent[] | null;
   createdAt: string;
   paystackReference: string | null;
   address: {
@@ -77,6 +93,24 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
       subtotal,
       shippingFee,
       status,
+      trackingNumber,
+      fulfillmentStatus,
+      courierName,
+      courierTrackingNumber,
+      courierTrackingUrl,
+      estimatedDeliveryAt,
+      currentLocation,
+      trackingEvents[]{
+        _key,
+        _type,
+        status,
+        occurredAt,
+        publicMessage,
+        location,
+        source,
+        actorName,
+        internalNote
+      },
       createdAt,
       paystackReference,
       "address": coalesce(
@@ -129,6 +163,18 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
         quantity: data.quantities?.[index] ?? 1,
         priceAtPurchase: data.productPrices?.[index] ?? 0,
       }));
+  const fulfillment = getFulfillmentStatus(data.fulfillmentStatus);
+  const FulfillmentIcon = fulfillment.icon;
+  const tracking: AdminTrackingData = {
+    trackingNumber: data.trackingNumber,
+    fulfillmentStatus: data.fulfillmentStatus,
+    courierName: data.courierName,
+    courierTrackingNumber: data.courierTrackingNumber,
+    courierTrackingUrl: data.courierTrackingUrl,
+    estimatedDeliveryAt: data.estimatedDeliveryAt,
+    currentLocation: data.currentLocation,
+    trackingEvents: data.trackingEvents,
+  };
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -145,13 +191,11 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
 
         {/* Status and Actions */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">
-              Status:
-            </span>
-            <Suspense fallback={<Skeleton className="h-10 w-[140px]" />}>
-              <StatusSelect {...handle} />
-            </Suspense>
+          <div
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${fulfillment.color}`}
+          >
+            <FulfillmentIcon className="h-4 w-4" />
+            {fulfillment.label}
           </div>
           <div className="flex items-center gap-2">
             <Suspense fallback={null}>
@@ -163,6 +207,12 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
           </div>
         </div>
       </div>
+
+      <OrderTrackingManager
+        key={`${data.fulfillmentStatus}-${data.trackingEvents?.at(-1)?._key ?? "none"}`}
+        handle={handle}
+        tracking={tracking}
+      />
 
       <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
         {/* Order Items */}
@@ -316,8 +366,17 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
                   </div>
                 }
               >
-                <AddressEditor {...handle} />
+                <AddressEditor
+                  {...handle}
+                  disabled={isShippingAddressLocked(data.fulfillmentStatus)}
+                />
               </Suspense>
+              {isShippingAddressLocked(data.fulfillmentStatus) ? (
+                <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+                  The shipping address is locked after dispatch. Correct the
+                  fulfillment stage before editing it.
+                </p>
+              ) : null}
             </div>
           </div>
 

@@ -17,6 +17,7 @@ export const orderType = defineType({
     { name: "details", title: "Order Details", default: true },
     { name: "customer", title: "Customer" },
     { name: "payment", title: "Payment" },
+    { name: "fulfillment", title: "Fulfillment & Tracking" },
   ],
   fields: [
     defineField({
@@ -196,6 +197,94 @@ export const orderType = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: "paymentStatus",
+      title: "Payment status",
+      type: "string",
+      group: "payment",
+      initialValue: "paid",
+      options: {
+        list: [
+          { title: "Paid", value: "paid" },
+          { title: "Partially refunded", value: "partially_refunded" },
+          { title: "Refunded", value: "refunded" },
+        ],
+        layout: "radio",
+      },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "fulfillmentStatus",
+      title: "Fulfillment status",
+      type: "string",
+      group: "fulfillment",
+      initialValue: "processing",
+      options: {
+        list: [
+          { title: "Processing", value: "processing" },
+          { title: "Packed", value: "packed" },
+          { title: "Dispatched", value: "dispatched" },
+          { title: "Out for delivery", value: "out_for_delivery" },
+          { title: "Delivered", value: "delivered" },
+          { title: "Cancelled", value: "cancelled" },
+        ],
+        layout: "radio",
+      },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "trackingNumber",
+      title: "Tracking number",
+      type: "string",
+      group: "fulfillment",
+      readOnly: true,
+      description: "Code Innovators Shop tracking number generated after payment.",
+      validation: (rule) =>
+        rule.regex(/^CIS-\d{4}-[A-F0-9]{8}$/, {
+          name: "tracking number",
+        }),
+    }),
+    defineField({
+      name: "trackingEvents",
+      title: "Tracking history",
+      type: "array",
+      group: "fulfillment",
+      readOnly: true,
+      description: "Append-only history used by the customer tracking timeline.",
+      of: [defineArrayMember({ type: "trackingEvent" })],
+    }),
+    defineField({
+      name: "courierName",
+      title: "Courier",
+      type: "string",
+      group: "fulfillment",
+    }),
+    defineField({
+      name: "courierTrackingNumber",
+      title: "Courier tracking number",
+      type: "string",
+      group: "fulfillment",
+    }),
+    defineField({
+      name: "courierTrackingUrl",
+      title: "Courier tracking URL",
+      type: "url",
+      group: "fulfillment",
+      validation: (rule) =>
+        rule.uri({ scheme: ["https"] }).error("Use a secure HTTPS tracking URL"),
+    }),
+    defineField({
+      name: "estimatedDeliveryAt",
+      title: "Estimated delivery",
+      type: "datetime",
+      group: "fulfillment",
+    }),
+    defineField({
+      name: "currentLocation",
+      title: "Current delivery location",
+      type: "string",
+      group: "fulfillment",
+    }),
+    defineField({
       name: "customer",
       type: "reference",
       to: [{ type: "customer" }],
@@ -340,16 +429,38 @@ export const orderType = defineType({
     defineField({
       name: "shippedAt",
       type: "datetime",
-      group: "details",
+      group: "fulfillment",
       readOnly: true,
       description: "Recorded when an admin first marks the order as shipped.",
     }),
     defineField({
+      name: "packedAt",
+      type: "datetime",
+      group: "fulfillment",
+      readOnly: true,
+      description: "Recorded when an admin first marks the order as packed.",
+    }),
+    defineField({
+      name: "outForDeliveryAt",
+      title: "Out for delivery at",
+      type: "datetime",
+      group: "fulfillment",
+      readOnly: true,
+      description: "Recorded when an admin first marks the order as out for delivery.",
+    }),
+    defineField({
       name: "deliveredAt",
       type: "datetime",
-      group: "details",
+      group: "fulfillment",
       readOnly: true,
       description: "Starts the product return window.",
+    }),
+    defineField({
+      name: "cancelledAt",
+      type: "datetime",
+      group: "fulfillment",
+      readOnly: true,
+      description: "Recorded when an admin cancels fulfillment.",
     }),
   ],
   preview: {

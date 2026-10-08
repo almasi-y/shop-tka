@@ -1,7 +1,6 @@
 "use client";
 
 import { Minus, Plus, ShoppingBag } from "lucide-react";
-import { SignInButton, useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { RestockNotificationButton } from "@/components/app/RestockNotificationButton";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ export function AddToCartButton({
   enableRestockNotification = false,
 }: AddToCartButtonProps) {
   const { addItem, updateQuantity } = useCartActions();
-  const { isLoaded, isSignedIn } = useAuth();
   const isCartReady = useCartReady();
   const cartItem = useCartItem(productId);
 
@@ -82,8 +80,8 @@ export function AddToCartButton({
   if (quantityInCart === 0) {
     const addButton = (
       <Button
-        onClick={isSignedIn ? handleAdd : undefined}
-        disabled={!isLoaded || (Boolean(isSignedIn) && !isCartReady)}
+        onClick={handleAdd}
+        disabled={!isCartReady}
         className={cn("h-11 w-full max-sm:[&_svg]:hidden", className)}
       >
         <ShoppingBag className="mr-2 h-4 w-4" />
@@ -91,13 +89,7 @@ export function AddToCartButton({
       </Button>
     );
 
-    if (!isLoaded || isSignedIn) return addButton;
-
-    return (
-      <SignInButton mode="modal" withSignUp>
-        {addButton}
-      </SignInButton>
-    );
+    return addButton;
   }
 
   // In cart - show quantity controls

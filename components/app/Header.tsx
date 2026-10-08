@@ -33,6 +33,10 @@ import { Input } from "@/components/ui/input";
 import { useCartActions, useTotalItems } from "@/lib/store/cart-store-provider";
 import { useChatActions } from "@/lib/store/chat-store-provider";
 import { WISHLIST_UPDATED_EVENT } from "@/lib/wishlist/events";
+import {
+  clearGuestWishlist,
+  getGuestWishlist,
+} from "@/lib/wishlist/guest";
 
 const AI_ASSISTANT_ENABLED =
   process.env.NEXT_PUBLIC_AI_ASSISTANT_ENABLED === "true";
@@ -136,11 +140,38 @@ function WishlistControl() {
   } | null>(null);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !userId) return;
+    if (!isLoaded) return;
+
+    if (!isSignedIn || !userId) {
+      const refreshGuestCount = () => {
+        setCountState({ userId: "guest", count: getGuestWishlist().length });
+      };
+      refreshGuestCount();
+      window.addEventListener(WISHLIST_UPDATED_EVENT, refreshGuestCount);
+      return () => {
+        window.removeEventListener(WISHLIST_UPDATED_EVENT, refreshGuestCount);
+      };
+    }
 
     const controller = new AbortController();
     const refreshCount = async () => {
       try {
+        const guestProductIds = getGuestWishlist();
+        if (guestProductIds.length > 0) {
+          const responses = await Promise.all(
+            guestProductIds.map((productId) =>
+              fetch("/api/wishlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId }),
+                signal: controller.signal,
+              }),
+            ),
+          );
+          if (responses.every((response) => response.ok)) {
+            clearGuestWishlist();
+          }
+        }
         const response = await fetch("/api/wishlist", {
           cache: "no-store",
           signal: controller.signal,
@@ -170,10 +201,9 @@ function WishlistControl() {
     };
   }, [isLoaded, isSignedIn, userId]);
 
+  const activeWishlistOwner = isSignedIn && userId ? userId : "guest";
   const count =
-    isSignedIn && userId && countState?.userId === userId
-      ? countState.count
-      : 0;
+    countState?.userId === activeWishlistOwner ? countState.count : 0;
 
   if (isSignedIn) {
     return (
@@ -214,9 +244,18 @@ function WishlistControl() {
         variant="ghost"
         size="icon"
         disabled={!isLoaded}
-        aria-label="Sign in to view wishlist"
+        className="relative overflow-visible"
+        aria-label={count > 0 ? `Sign in to view ${count} saved items` : "Sign in to view wishlist"}
       >
         <Heart className="size-5" />
+        {count > 0 && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-blue px-1 text-[0.625rem] font-bold leading-none text-white shadow-md ring-2 ring-white dark:ring-zinc-950"
+          >
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
       </Button>
     </SignInButton>
   );

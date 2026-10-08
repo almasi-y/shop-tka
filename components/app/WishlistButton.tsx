@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SignInButton, useAuth } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { Heart, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { notifyWishlistUpdated } from "@/lib/wishlist/events";
+import {
+  isGuestWishlisted,
+  toggleGuestWishlist,
+} from "@/lib/wishlist/guest";
 
 interface WishlistButtonProps {
   productId: string;
@@ -27,7 +31,13 @@ export function WishlistButton({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      setWishlistState({
+        userId: "guest",
+        wishlisted: isGuestWishlisted(productId),
+      });
       return;
     }
 
@@ -57,6 +67,18 @@ export function WishlistButton({
   }, [isLoaded, isSignedIn, productId, userId]);
 
   async function toggleWishlist() {
+    if (!isSignedIn || !userId) {
+      const wishlisted = toggleGuestWishlist(productId);
+      setWishlistState({ userId: "guest", wishlisted });
+      notifyWishlistUpdated();
+      toast.success(
+        wishlisted
+          ? `${productName} saved to your wishlist`
+          : `${productName} removed from your wishlist`,
+      );
+      return;
+    }
+
     const isWishlisted = Boolean(
       isSignedIn &&
         userId &&
@@ -102,11 +124,9 @@ export function WishlistButton({
     }
   }
 
+  const activeWishlistOwner = isSignedIn && userId ? userId : "guest";
   const isWishlisted = Boolean(
-    isSignedIn &&
-      userId &&
-      wishlistState?.userId === userId &&
-      wishlistState.wishlisted,
+    wishlistState?.userId === activeWishlistOwner && wishlistState.wishlisted,
   );
   const button = (
     <Button
@@ -114,8 +134,8 @@ export function WishlistButton({
       variant="outline"
       className={cn("h-10 w-full", className)}
       disabled={!isLoaded || isSaving}
-      aria-pressed={isSignedIn ? isWishlisted : undefined}
-      onClick={isSignedIn ? toggleWishlist : undefined}
+      aria-pressed={isWishlisted}
+      onClick={toggleWishlist}
     >
       {isSaving ? (
         <Loader2 className="animate-spin" aria-hidden="true" />
@@ -129,11 +149,5 @@ export function WishlistButton({
     </Button>
   );
 
-  if (!isLoaded || isSignedIn) return button;
-
-  return (
-    <SignInButton mode="modal" withSignUp>
-      {button}
-    </SignInButton>
-  );
+  return button;
 }

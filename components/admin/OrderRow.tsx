@@ -6,14 +6,14 @@ import { useDocumentProjection, type DocumentHandle } from "@sanity/sdk-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getOrderStatus } from "@/lib/constants/orderStatus";
+import { getFulfillmentStatus } from "@/lib/constants/orderTracking";
 import { formatPrice, formatDate, formatOrderNumber } from "@/lib/utils";
 
 interface OrderProjection {
   orderNumber: string;
   email: string;
   total: number;
-  status: string;
+  fulfillmentStatus: string;
   createdAt: string;
   itemCount: number;
 }
@@ -25,7 +25,7 @@ function OrderRowContent(handle: DocumentHandle) {
       orderNumber,
       "email": coalesce(customerEmail, email),
       "total": coalesce(totalPrice, total),
-      status,
+      fulfillmentStatus,
       createdAt,
       "itemCount": select(defined(products) => count(products), count(items))
     }`,
@@ -33,7 +33,7 @@ function OrderRowContent(handle: DocumentHandle) {
 
   if (!data) return null;
 
-  const status = getOrderStatus(data.status);
+  const status = getFulfillmentStatus(data.fulfillmentStatus);
   const StatusIcon = status.icon;
 
   return (

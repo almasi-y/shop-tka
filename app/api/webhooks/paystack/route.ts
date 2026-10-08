@@ -2,6 +2,10 @@ import crypto from "node:crypto";
 import { writeClient } from "@/sanity/lib/client";
 import { ORDER_BY_PAYSTACK_REFERENCE_QUERY } from "@/lib/sanity/queries/orders";
 import { shippingAddressSchema } from "@/lib/checkout/shipping-address";
+import {
+  createTrackingEventKey,
+  createTrackingNumber,
+} from "@/lib/orders/tracking";
 
 type PaystackEvent = {
   event?: string;
@@ -141,8 +145,10 @@ export async function POST(request: Request) {
     .createHash("sha256")
     .update(reference)
     .digest("hex");
+  const createdAt = new Date().toISOString();
   const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${referenceHash.slice(0, 6).toUpperCase()}`;
   const orderId = `order.paystack.${referenceHash}`;
+  const trackingNumber = createTrackingNumber(reference, createdAt);
   const customerEmail = transaction.customer?.email ?? transaction.email;
   if (!customerEmail) {
     return Response.json({ error: "Paystack customer email is missing" }, { status: 400 });
@@ -170,8 +176,33 @@ export async function POST(request: Request) {
     shippingFee,
     totalPrice: total,
     status: "paid",
+    paymentStatus: "paid",
+    fulfillmentStatus: "processing",
+    trackingNumber,
+    trackingEvents: [
+      {
+        _key: createTrackingEventKey(
+          reference,
+          "payment_confirmed",
+          createdAt,
+        ),
+        _type: "trackingEvent",
+        status: "payment_confirmed",
+        occurredAt: createdAt,
+        publicMessage: "Payment confirmed and order received.",
+        source: "system",
+      },
+      {
+        _key: createTrackingEventKey(reference, "processing", createdAt),
+        _type: "trackingEvent",
+        status: "processing",
+        occurredAt: createdAt,
+        publicMessage: "Your order is being prepared.",
+        source: "system",
+      },
+    ],
     paystackReference: reference,
-    createdAt: new Date().toISOString(),
+    createdAt,
   };
 
   for (let attempt = 0; attempt < MAX_INVENTORY_ATTEMPTS; attempt += 1) {

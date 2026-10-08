@@ -15,6 +15,24 @@
 export declare const internalGroqTypeReferenceTo: unique symbol;
 
 // Source: schema.json
+export type TrackingEvent = {
+  _type: "trackingEvent";
+  status?:
+    | "payment_confirmed"
+    | "processing"
+    | "packed"
+    | "dispatched"
+    | "out_for_delivery"
+    | "delivered"
+    | "cancelled";
+  occurredAt?: string;
+  publicMessage?: string;
+  location?: string;
+  source?: "system" | "admin" | "courier";
+  actorName?: string;
+  internalNote?: string;
+};
+
 export type ProductReference = {
   _ref: string;
   _type: "reference";
@@ -213,6 +231,25 @@ export type Order = {
   quantities?: Array<number>;
   productPrices?: Array<number>;
   status?: "paid" | "shipped" | "delivered" | "cancelled";
+  paymentStatus?: "paid" | "partially_refunded" | "refunded";
+  fulfillmentStatus?:
+    | "processing"
+    | "packed"
+    | "dispatched"
+    | "out_for_delivery"
+    | "delivered"
+    | "cancelled";
+  trackingNumber?: string;
+  trackingEvents?: Array<
+    {
+      _key: string;
+    } & TrackingEvent
+  >;
+  courierName?: string;
+  courierTrackingNumber?: string;
+  courierTrackingUrl?: string;
+  estimatedDeliveryAt?: string;
+  currentLocation?: string;
   customer?: CustomerReference;
   clerkUserId?: string;
   email?: string;
@@ -240,7 +277,10 @@ export type Order = {
   inventoryIssue?: string;
   createdAt?: string;
   shippedAt?: string;
+  packedAt?: string;
+  outForDeliveryAt?: string;
   deliveredAt?: string;
+  cancelledAt?: string;
 };
 
 export type CategoryReference = {
@@ -560,6 +600,7 @@ export type Geopoint = {
 };
 
 export type AllSanitySchemaTypes =
+  | TrackingEvent
   | ProductReference
   | ShoppingCart
   | OrderReference
@@ -714,12 +755,20 @@ export type CUSTOMER_ADDRESS_BY_USER_QUERY_RESULT = {
 
 // Source: lib/sanity/queries/orders.ts
 // Variable: ORDERS_BY_USER_QUERY
-// Query: *[  _type == "order"  && clerkUserId == $clerkUserId] | order(createdAt desc) {  _id,  orderNumber,  "total": coalesce(totalPrice, total),  status,  createdAt,  "itemCount": select(defined(products) => count(products), count(items)),  "itemNames": select(    defined(products) => products[]->{"value": coalesce(title, name)}.value,    coalesce(items[].product->title, items[].product->name)  ),  "itemImages": select(    defined(products) => products[]->images[0].asset->url,    items[].product->images[0].asset->url  )}
+// Query: *[  _type == "order"  && clerkUserId == $clerkUserId] | order(createdAt desc) {  _id,  orderNumber,  "total": coalesce(totalPrice, total),  status,  fulfillmentStatus,  createdAt,  "itemCount": select(defined(products) => count(products), count(items)),  "itemNames": select(    defined(products) => products[]->{"value": coalesce(title, name)}.value,    coalesce(items[].product->title, items[].product->name)  ),  "itemImages": select(    defined(products) => products[]->images[0].asset->url,    items[].product->images[0].asset->url  )}
 export type ORDERS_BY_USER_QUERY_RESULT = Array<{
   _id: string;
   orderNumber: string | null;
   total: number | null;
   status: "cancelled" | "delivered" | "paid" | "shipped" | null;
+  fulfillmentStatus:
+    | "cancelled"
+    | "delivered"
+    | "dispatched"
+    | "out_for_delivery"
+    | "packed"
+    | "processing"
+    | null;
   createdAt: string | null;
   itemCount: number | null;
   itemNames: Array<string | null> | null;
@@ -728,7 +777,7 @@ export type ORDERS_BY_USER_QUERY_RESULT = Array<{
 
 // Source: lib/sanity/queries/orders.ts
 // Variable: ORDER_BY_ID_QUERY
-// Query: *[  _type == "order"  && _id == $id][0] {  _id,  orderNumber,  clerkUserId,  "email": coalesce(customerEmail, email),  products[]->{    _id,    "name": coalesce(title, name),    "slug": slug.current,    "image": images[0]{      asset->{        _id,        url      }    }  },  quantities,  productPrices,  subtotal,  shippingFee,  "legacyItems": items[]{    _key,    quantity,    priceAtPurchase,    product->{      _id,      "name": coalesce(title, name),      "slug": slug.current,      "image": images[0]{        asset->{          _id,          url        }      }    }  },  "total": coalesce(totalPrice, total),  status,  "address": coalesce(shippingAddress, address),  paystackReference,  createdAt}
+// Query: *[  _type == "order"  && _id == $id  && clerkUserId == $clerkUserId][0] {  _id,  orderNumber,  clerkUserId,  "email": coalesce(customerEmail, email),  products[]->{    _id,    "name": coalesce(title, name),    "slug": slug.current,    "image": images[0]{      asset->{        _id,        url      }    }  },  quantities,  productPrices,  subtotal,  shippingFee,  "legacyItems": items[]{    _key,    quantity,    priceAtPurchase,    product->{      _id,      "name": coalesce(title, name),      "slug": slug.current,      "image": images[0]{        asset->{          _id,          url        }      }    }  },  "total": coalesce(totalPrice, total),  status,  "paymentStatus": coalesce(paymentStatus, "paid"),  fulfillmentStatus,  trackingNumber,  courierName,  courierTrackingNumber,  courierTrackingUrl,  estimatedDeliveryAt,  currentLocation,  "trackingEvents": trackingEvents[defined(publicMessage)]{    _key,    status,    occurredAt,    publicMessage,    location  },  "address": coalesce(shippingAddress, address),  paystackReference,  createdAt}
 export type ORDER_BY_ID_QUERY_RESULT = {
   _id: string;
   orderNumber: string | null;
@@ -767,6 +816,36 @@ export type ORDER_BY_ID_QUERY_RESULT = {
   }> | null;
   total: number | null;
   status: "cancelled" | "delivered" | "paid" | "shipped" | null;
+  paymentStatus: "paid" | "partially_refunded" | "refunded";
+  fulfillmentStatus:
+    | "cancelled"
+    | "delivered"
+    | "dispatched"
+    | "out_for_delivery"
+    | "packed"
+    | "processing"
+    | null;
+  trackingNumber: string | null;
+  courierName: string | null;
+  courierTrackingNumber: string | null;
+  courierTrackingUrl: string | null;
+  estimatedDeliveryAt: string | null;
+  currentLocation: string | null;
+  trackingEvents: Array<{
+    _key: string;
+    status:
+      | "cancelled"
+      | "delivered"
+      | "dispatched"
+      | "out_for_delivery"
+      | "packed"
+      | "payment_confirmed"
+      | "processing"
+      | null;
+    occurredAt: string | null;
+    publicMessage: string | null;
+    location: string | null;
+  }> | null;
   address:
     | {
         name?: string;
@@ -1490,8 +1569,8 @@ declare module "@sanity/client" {
     '*[\n  _type == "category"\n] | order(coalesce(displayOrder, 2147483647) asc, title asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  "parentId": parentCategory._ref,\n  displayOrder,\n  "image": image{\n    asset->{\n      _id,\n      url\n    },\n    hotspot\n  }\n}': ALL_CATEGORIES_QUERY_RESULT;
     '*[\n  _type == "category"\n  && slug.current == $slug\n][0] {\n  _id,\n  title,\n  "slug": slug.current,\n  "parentId": parentCategory._ref,\n  displayOrder,\n  "image": image{\n    asset->{\n      _id,\n      url\n    },\n    hotspot\n  }\n}': CATEGORY_BY_SLUG_QUERY_RESULT;
     '*[\n  _type == "customer"\n  && clerkUserId == $clerkUserId\n] | order(createdAt desc)[0] {\n  _id,\n  email,\n  name,\n  shippingAddress {\n    name,\n    line1,\n    line2,\n    city,\n    postcode,\n    county,\n    country\n  }\n}': CUSTOMER_ADDRESS_BY_USER_QUERY_RESULT;
-    '*[\n  _type == "order"\n  && clerkUserId == $clerkUserId\n] | order(createdAt desc) {\n  _id,\n  orderNumber,\n  "total": coalesce(totalPrice, total),\n  status,\n  createdAt,\n  "itemCount": select(defined(products) => count(products), count(items)),\n  "itemNames": select(\n    defined(products) => products[]->{"value": coalesce(title, name)}.value,\n    coalesce(items[].product->title, items[].product->name)\n  ),\n  "itemImages": select(\n    defined(products) => products[]->images[0].asset->url,\n    items[].product->images[0].asset->url\n  )\n}': ORDERS_BY_USER_QUERY_RESULT;
-    '*[\n  _type == "order"\n  && _id == $id\n][0] {\n  _id,\n  orderNumber,\n  clerkUserId,\n  "email": coalesce(customerEmail, email),\n  products[]->{\n    _id,\n    "name": coalesce(title, name),\n    "slug": slug.current,\n    "image": images[0]{\n      asset->{\n        _id,\n        url\n      }\n    }\n  },\n  quantities,\n  productPrices,\n  subtotal,\n  shippingFee,\n  "legacyItems": items[]{\n    _key,\n    quantity,\n    priceAtPurchase,\n    product->{\n      _id,\n      "name": coalesce(title, name),\n      "slug": slug.current,\n      "image": images[0]{\n        asset->{\n          _id,\n          url\n        }\n      }\n    }\n  },\n  "total": coalesce(totalPrice, total),\n  status,\n  "address": coalesce(shippingAddress, address),\n  paystackReference,\n  createdAt\n}': ORDER_BY_ID_QUERY_RESULT;
+    '*[\n  _type == "order"\n  && clerkUserId == $clerkUserId\n] | order(createdAt desc) {\n  _id,\n  orderNumber,\n  "total": coalesce(totalPrice, total),\n  status,\n  fulfillmentStatus,\n  createdAt,\n  "itemCount": select(defined(products) => count(products), count(items)),\n  "itemNames": select(\n    defined(products) => products[]->{"value": coalesce(title, name)}.value,\n    coalesce(items[].product->title, items[].product->name)\n  ),\n  "itemImages": select(\n    defined(products) => products[]->images[0].asset->url,\n    items[].product->images[0].asset->url\n  )\n}': ORDERS_BY_USER_QUERY_RESULT;
+    '*[\n  _type == "order"\n  && _id == $id\n  && clerkUserId == $clerkUserId\n][0] {\n  _id,\n  orderNumber,\n  clerkUserId,\n  "email": coalesce(customerEmail, email),\n  products[]->{\n    _id,\n    "name": coalesce(title, name),\n    "slug": slug.current,\n    "image": images[0]{\n      asset->{\n        _id,\n        url\n      }\n    }\n  },\n  quantities,\n  productPrices,\n  subtotal,\n  shippingFee,\n  "legacyItems": items[]{\n    _key,\n    quantity,\n    priceAtPurchase,\n    product->{\n      _id,\n      "name": coalesce(title, name),\n      "slug": slug.current,\n      "image": images[0]{\n        asset->{\n          _id,\n          url\n        }\n      }\n    }\n  },\n  "total": coalesce(totalPrice, total),\n  status,\n  "paymentStatus": coalesce(paymentStatus, "paid"),\n  fulfillmentStatus,\n  trackingNumber,\n  courierName,\n  courierTrackingNumber,\n  courierTrackingUrl,\n  estimatedDeliveryAt,\n  currentLocation,\n  "trackingEvents": trackingEvents[defined(publicMessage)]{\n    _key,\n    status,\n    occurredAt,\n    publicMessage,\n    location\n  },\n  "address": coalesce(shippingAddress, address),\n  paystackReference,\n  createdAt\n}': ORDER_BY_ID_QUERY_RESULT;
     '*[\n  _type == "order"\n] | order(createdAt desc) [0...$limit] {\n  _id,\n  orderNumber,\n  "email": coalesce(customerEmail, email),\n  "total": coalesce(totalPrice, total),\n  status,\n  createdAt\n}': RECENT_ORDERS_QUERY_RESULT;
     '*[\n  _type == "order"\n  && paystackReference == $paystackReference\n][0]{ _id }': ORDER_BY_PAYSTACK_REFERENCE_QUERY_RESULT;
     '*[\n  _type == "order"\n  && paystackReference == $paystackReference\n][0]{\n  _id,\n  clerkUserId,\n  status\n}': ORDER_STATUS_BY_PAYSTACK_REFERENCE_QUERY_RESULT;

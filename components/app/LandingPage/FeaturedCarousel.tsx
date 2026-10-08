@@ -118,15 +118,15 @@ function FeaturedSlide({ product, eager = false }: FeaturedSlideProps) {
   const mainImage = product.images?.[0]?.asset?.url;
 
   return (
-    <div className="flex flex-col md:h-[400px] md:flex-row lg:h-[420px]">
+    <div className="flex h-[180px] sm:h-[220px] md:h-[280px] md:flex-row lg:h-[300px]">
       {/* Image Section - Left side (60% on desktop) */}
-      <div className="relative h-64 w-full bg-zinc-50 md:h-auto md:w-3/5 dark:bg-zinc-900">
+      <div className="relative h-full w-1/2 bg-zinc-50 md:w-3/5 dark:bg-zinc-900">
         {mainImage ? (
           <Image
             src={mainImage}
             alt={product.name ?? "Featured product"}
             fill
-            className="object-contain p-4 md:p-8"
+            className="object-contain p-2 sm:p-4 md:p-6"
             sizes="(max-width: 768px) 100vw, 60vw"
             loading={eager ? "eager" : "lazy"}
           />
@@ -138,22 +138,22 @@ function FeaturedSlide({ product, eager = false }: FeaturedSlideProps) {
       </div>
 
       {/* Content Section - Right side (40% on desktop) */}
-      <div className="flex w-full flex-col justify-center px-6 py-8 md:w-2/5 md:px-10 lg:px-16">
-        <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+      <div className="flex w-1/2 flex-col justify-center px-3 py-4 sm:px-5 md:w-2/5 md:px-8">
+        <h2 className="line-clamp-2 text-lg font-bold tracking-tight text-white sm:text-2xl lg:text-3xl">
           {product.name}
         </h2>
 
         {product.description && (
-          <p className="mt-4 line-clamp-3 text-sm text-zinc-300 sm:text-base lg:text-lg">
+          <p className="mt-2 hidden line-clamp-2 text-sm text-zinc-300 sm:block md:mt-3 md:text-base">
             {product.description}
           </p>
         )}
 
-        <p className="mt-6 text-3xl font-bold text-white lg:text-4xl">
+        <p className="mt-3 text-xl font-bold text-white sm:text-2xl md:mt-4 lg:text-3xl">
           {formatPrice(product.price)}
         </p>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-3 flex sm:mt-5">
           <Link
             href={`/products/${encodeURIComponent(product.slug ?? product._id)}`}
             className={cn(

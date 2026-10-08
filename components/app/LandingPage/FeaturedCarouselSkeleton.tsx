@@ -3,14 +3,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function FeaturedCarouselSkeleton() {
   return (
     <div className="relative w-full bg-brand-mist dark:bg-brand-night">
-      <div className="flex flex-col md:h-[400px] md:flex-row lg:h-[420px]">
+      <div className="flex h-[180px] sm:h-[220px] md:h-[280px] md:flex-row lg:h-[300px]">
         {/* Image Section Skeleton */}
-        <div className="relative h-64 w-full md:h-auto md:w-3/5">
+        <div className="relative h-full w-1/2 md:w-3/5">
           <Skeleton className="h-full w-full rounded-none bg-zinc-800" />
         </div>
 
         {/* Content Section Skeleton */}
-        <div className="flex w-full flex-col justify-center px-6 py-8 md:w-2/5 md:px-10 lg:px-16">
+        <div className="flex w-1/2 flex-col justify-center px-3 py-4 sm:px-5 md:w-2/5 md:px-8">
           {/* Category badge */}
           <Skeleton className="mb-4 h-6 w-24 bg-zinc-700" />
 

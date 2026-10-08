@@ -19,7 +19,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
 
   if (!images || images.length === 0) {
     return (
-      <div className="flex aspect-square items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+      <div className="flex aspect-4/3 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
         <span className="text-zinc-400">No images available</span>
       </div>
     );
@@ -30,14 +30,14 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
+      <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
         {selectedImage?.asset?.url ? (
           <Image
             src={selectedImage.asset.url}
             alt={productName ?? "Product image"}
             fill
             className="object-contain"
-            sizes="(max-width: 1024px) 100vw, 50vw"
+            sizes="(max-width: 640px) 56vw, (max-width: 1024px) 50vw, 480px"
             loading="eager"
           />
         ) : (

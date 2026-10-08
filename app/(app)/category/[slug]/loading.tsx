@@ -1,5 +1,5 @@
 import { CatalogPageSkeleton } from "@/components/app/LandingPage/CatalogPageSkeleton";
 
-export default function HomeLoading() {
-  return <CatalogPageSkeleton showCarousel />;
+export default function CategoryLoading() {
+  return <CatalogPageSkeleton />;
 }

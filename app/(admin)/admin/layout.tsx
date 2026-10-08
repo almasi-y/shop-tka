@@ -17,6 +17,7 @@ import {
 import { Providers } from "@/components/providers/Providers";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/sonner";
 
 const navItems = [
   {
@@ -176,6 +177,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
           <div className="p-4 lg:p-8">{children}</div>
         </main>
       </div>
+      <Toaster position="bottom-center" />
     </Providers>
   );
 }

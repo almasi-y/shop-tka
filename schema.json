@@ -1,5 +1,114 @@
 [
   {
+    "name": "trackingEvent",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "trackingEvent"
+          }
+        },
+        "status": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "payment_confirmed"
+              },
+              {
+                "type": "string",
+                "value": "processing"
+              },
+              {
+                "type": "string",
+                "value": "packed"
+              },
+              {
+                "type": "string",
+                "value": "dispatched"
+              },
+              {
+                "type": "string",
+                "value": "out_for_delivery"
+              },
+              {
+                "type": "string",
+                "value": "delivered"
+              },
+              {
+                "type": "string",
+                "value": "cancelled"
+              }
+            ]
+          },
+          "optional": true
+        },
+        "occurredAt": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "publicMessage": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "location": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "source": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "system"
+              },
+              {
+                "type": "string",
+                "value": "admin"
+              },
+              {
+                "type": "string",
+                "value": "courier"
+              }
+            ]
+          },
+          "optional": true
+        },
+        "actorName": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "internalNote": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        }
+      }
+    }
+  },
+  {
     "type": "type",
     "name": "product.reference",
     "value": {
@@ -1257,6 +1366,124 @@
         },
         "optional": true
       },
+      "paymentStatus": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "union",
+          "of": [
+            {
+              "type": "string",
+              "value": "paid"
+            },
+            {
+              "type": "string",
+              "value": "partially_refunded"
+            },
+            {
+              "type": "string",
+              "value": "refunded"
+            }
+          ]
+        },
+        "optional": true
+      },
+      "fulfillmentStatus": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "union",
+          "of": [
+            {
+              "type": "string",
+              "value": "processing"
+            },
+            {
+              "type": "string",
+              "value": "packed"
+            },
+            {
+              "type": "string",
+              "value": "dispatched"
+            },
+            {
+              "type": "string",
+              "value": "out_for_delivery"
+            },
+            {
+              "type": "string",
+              "value": "delivered"
+            },
+            {
+              "type": "string",
+              "value": "cancelled"
+            }
+          ]
+        },
+        "optional": true
+      },
+      "trackingNumber": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "trackingEvents": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "trackingEvent"
+            }
+          }
+        },
+        "optional": true
+      },
+      "courierName": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "courierTrackingNumber": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "courierTrackingUrl": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "estimatedDeliveryAt": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "currentLocation": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
       "customer": {
         "type": "objectAttribute",
         "value": {
@@ -1437,7 +1664,28 @@
         },
         "optional": true
       },
+      "packedAt": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "outForDeliveryAt": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
       "deliveredAt": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "cancelledAt": {
         "type": "objectAttribute",
         "value": {
           "type": "string"

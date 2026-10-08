@@ -16,7 +16,7 @@ import {
   useOrderSearchFilter,
 } from "@/components/admin/AdminSearch";
 import { OrderTableHeader } from "@/components/admin/table-headers";
-import { ORDER_STATUS_TABS } from "@/lib/constants/orderStatus";
+import { FULFILLMENT_STATUS_TABS } from "@/lib/constants/orderTracking";
 
 interface OrderListContentProps {
   statusFilter: string;
@@ -30,7 +30,7 @@ function OrderListContent({
   // Combine status and search filters
   const filters: string[] = [];
   if (statusFilter !== "all") {
-    filters.push(`status == "${statusFilter}"`);
+    filters.push(`fulfillmentStatus == "${statusFilter}"`);
   }
   if (searchFilter) {
     filters.push(`(${searchFilter})`);
@@ -137,7 +137,7 @@ export default function OrdersPage() {
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="w-max">
-              {ORDER_STATUS_TABS.map((tab) => (
+              {FULFILLMENT_STATUS_TABS.map((tab) => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}

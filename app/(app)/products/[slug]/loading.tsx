@@ -5,9 +5,9 @@ import { ProductInfoSkeleton } from "@/components/app/ProductInfoSkeleton";
 export default function ProductLoading() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-2 py-5 sm:px-6 sm:py-8 lg:px-8">
         <Skeleton className="mb-6 h-4 w-72 max-w-full" />
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+        <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] items-start gap-3 sm:gap-6 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] lg:gap-10">
           <div className="lg:sticky lg:top-14 lg:h-fit lg:self-start">
             <ProductGallerySkeleton />
           </div>

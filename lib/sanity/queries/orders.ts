@@ -8,6 +8,7 @@ export const ORDERS_BY_USER_QUERY = defineQuery(`*[
   orderNumber,
   "total": coalesce(totalPrice, total),
   status,
+  fulfillmentStatus,
   createdAt,
   "itemCount": select(defined(products) => count(products), count(items)),
   "itemNames": select(
@@ -23,6 +24,7 @@ export const ORDERS_BY_USER_QUERY = defineQuery(`*[
 export const ORDER_BY_ID_QUERY = defineQuery(`*[
   _type == "order"
   && _id == $id
+  && clerkUserId == $clerkUserId
 ][0] {
   _id,
   orderNumber,
@@ -61,6 +63,21 @@ export const ORDER_BY_ID_QUERY = defineQuery(`*[
   },
   "total": coalesce(totalPrice, total),
   status,
+  "paymentStatus": coalesce(paymentStatus, "paid"),
+  fulfillmentStatus,
+  trackingNumber,
+  courierName,
+  courierTrackingNumber,
+  courierTrackingUrl,
+  estimatedDeliveryAt,
+  currentLocation,
+  "trackingEvents": trackingEvents[defined(publicMessage)]{
+    _key,
+    status,
+    occurredAt,
+    publicMessage,
+    location
+  },
   "address": coalesce(shippingAddress, address),
   paystackReference,
   createdAt
