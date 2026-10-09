@@ -19,6 +19,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { SignInButton, useAuth, useClerk } from "@clerk/nextjs";
+import { FaWhatsapp } from "react-icons/fa";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -274,13 +275,33 @@ export function Header() {
           <p className="hidden font-medium tracking-wide text-white/90 sm:block">
             Your one-stop shop for STEM, robotics, automation and turnkey projects.
           </p>
-          <a
-            href="tel:+25480754126"
-            className="inline-flex items-center gap-2 whitespace-nowrap font-medium text-white/90 transition-colors hover:text-white"
-          >
-            <PhoneCall className="size-3.5" aria-hidden="true" />
-            +25480754126
-          </a>
+          <div className="flex items-center gap-2.5 sm:gap-4">
+            <span
+              role="img"
+              aria-label="Kenya"
+              title="Kenya"
+              className="text-base leading-none"
+            >
+              🇰🇪
+            </span>
+            <a
+              href="tel:+25480754126"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap font-medium text-white/90 transition-colors hover:text-white sm:gap-2"
+            >
+              <PhoneCall className="size-3.5" aria-hidden="true" />
+              +25480754126
+            </a>
+            <a
+              href="https://wa.me/254114960666"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Contact us on WhatsApp at +254114960666"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap font-medium text-white/90 transition-colors hover:text-white sm:gap-2"
+            >
+              <FaWhatsapp className="size-4" aria-hidden="true" />
+              +254114960666
+            </a>
+          </div>
         </div>
       </div>
 

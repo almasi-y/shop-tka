@@ -23,24 +23,24 @@ export function ProductInfo({ product }: ProductInfoProps) {
       {product.category && (
         <Link
           href={`/category/${product.category.slug}`}
-          className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 sm:text-sm"
+          className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
         >
           {product.category.title}
         </Link>
       )}
 
       {/* Title */}
-      <h1 className="mt-1 text-lg font-bold leading-tight text-zinc-900 dark:text-zinc-100 sm:mt-2 sm:text-2xl lg:text-3xl">
+      <h1 className="mt-2 text-3xl font-bold leading-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl lg:text-3xl">
         {product.name}
       </h1>
 
       {/* Price */}
-      <p className="mt-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:mt-4 sm:text-2xl">
+      <p className="mt-4 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
         {formatPrice(product.price)}
       </p>
 
       {/* Primary product actions */}
-      <div className="mt-3 grid grid-cols-2 gap-1 sm:mt-6 sm:gap-3">
+      <div className="mt-6 grid grid-cols-2 gap-3">
         <AddToCartButton
           productId={product._id}
           slug={product.slug ?? undefined}
@@ -49,18 +49,18 @@ export function ProductInfo({ product }: ProductInfoProps) {
           image={imageUrl ?? undefined}
           stock={product.stock ?? 0}
           enableRestockNotification
-          className="min-w-0 px-1 text-[10px] sm:px-2 sm:text-sm"
+          className="min-w-0 px-2 text-xs sm:text-sm"
         />
         <WishlistButton
           productId={product._id}
           productName={product.name ?? "this product"}
-          className="h-11 min-w-0 px-1 text-[10px] max-sm:[&_svg]:hidden sm:px-2 sm:text-sm"
+          className="h-11 min-w-0 px-2 text-xs sm:text-sm"
         />
       </div>
 
       {/* Description */}
       {product.description && (
-        <p className="mt-3 whitespace-pre-line text-sm text-zinc-600 dark:text-zinc-400 sm:mt-4 sm:text-base">
+        <p className="mt-4 whitespace-pre-line text-base text-zinc-600 dark:text-zinc-400">
           {product.description}
         </p>
       )}
