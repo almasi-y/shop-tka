@@ -4,6 +4,10 @@ import {
   PaystackFulfillmentError,
   type PaystackTransaction,
 } from "@/lib/checkout/fulfill-paystack-transaction";
+import {
+  logPaymentEvent,
+  reportPaymentFailure,
+} from "@/lib/payments/observability";
 
 type PaystackEvent = {
   event?: string;
@@ -26,6 +30,9 @@ function signaturesMatch(body: string, signature: string, secret: string) {
 export async function POST(request: Request) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) {
+    await reportPaymentFailure("payment.webhook.configuration_failed", {
+      failureCode: "PAYSTACK_SECRET_MISSING",
+    });
     return Response.json({ error: "Paystack is not configured" }, { status: 500 });
   }
 
@@ -49,6 +56,10 @@ export async function POST(request: Request) {
 
   try {
     const result = await fulfillPaystackTransaction(event.data);
+    logPaymentEvent("info", "payment.webhook_fulfillment.succeeded", {
+      reference: event.data.reference,
+      duplicate: result.duplicate,
+    });
     return Response.json({ received: true, ...result });
   } catch (error) {
     const status =
@@ -57,10 +68,26 @@ export async function POST(request: Request) {
       error instanceof PaystackFulfillmentError
         ? error.message
         : "Unable to record paid order";
-    console.error("Paystack webhook fulfillment failed", {
-      reference: event.data.reference,
+    await reportPaymentFailure(
+      "payment.webhook_fulfillment.failed",
+      {
+        reference: event.data.reference,
+        failureCode:
+          error instanceof PaystackFulfillmentError
+            ? error.code
+            : "PAYSTACK_FULFILLMENT_FAILED",
+      },
       error,
-    });
-    return Response.json({ error: message }, { status });
+    );
+    return Response.json(
+      {
+        error: message,
+        code:
+          error instanceof PaystackFulfillmentError
+            ? error.code
+            : "PAYSTACK_FULFILLMENT_FAILED",
+      },
+      { status },
+    );
   }
 }

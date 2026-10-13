@@ -70,6 +70,22 @@ Minimum payment regression checks:
 9. Test one duplicate delivery and one webhook-unavailable scenario. Both
    must finish safely without duplicate orders, duplicate stock deductions,
    or an endless confirmation screen.
+10. Do not treat the presence of `SANITY_API_WRITE_TOKEN` in local development
+    as proof that production can fulfill orders. Verify the Vercel Production
+    token is current, Editor-capable, targets the same Sanity project/dataset,
+    and has been applied by a redeployment; then prove an order write through
+    a production function.
+11. Checkout must prove Sanity write permission with a dry-run mutation before
+    initializing Paystack. A failed preflight blocks payment and states that
+    the customer has not been charged.
+12. Production exposes server-secret-protected readiness and manual
+    reconciliation endpoints. Operators run readiness after every deployment
+    and reconcile only verified `order-...` Paystack references.
+13. A CRON-secret-protected daily job scans the previous seven days for
+    successful application transactions without Sanity orders and processes
+    them through the same idempotent fulfillment routine.
+14. Payment failures emit structured event codes suitable for Vercel log
+    alerts and may also be delivered to the configured sanitized alert webhook.
 
 ---
 
@@ -565,6 +581,29 @@ Define tools for:
 - **Release lesson:** every move between localhost/ngrok/preview/production
   must include a Paystack webhook-target check and a real delivery-response
   check; a working callback URL does not prove the webhook is configured.
+
+### 9.5 Production Payment Incident — 13 October 2026
+
+- **Symptom:** Paystack recorded a successful live charge, but the success
+  page reported that confirmation failed and no order appeared for either the
+  customer or admin.
+- **Verified boundaries:** Paystack verification returned `success`; the KES
+  amount matched the server-derived item and shipping total; Clerk ownership,
+  item arrays, address metadata, product existence, and stock were valid; no
+  matching Sanity order existed.
+- **Recovery:** the already-paid transaction was passed through the shared
+  idempotent fulfillment routine. It created one paid/processing order,
+  generated tracking data, and decremented inventory exactly once. The
+  customer must not pay again.
+- **Environment finding:** the same fulfillment code and configured Sanity
+  write token succeeded outside the deployed function. The leading cause is
+  therefore a missing, stale/revoked, incorrectly scoped, or unapplied
+  `SANITY_API_WRITE_TOKEN` in Vercel Production; confirm this in Vercel logs
+  and environment settings rather than treating the inference as proven.
+- **Required follow-up:** replace/confirm the Production Editor-capable token,
+  confirm the Sanity project and dataset variables match, redeploy, verify the
+  live webhook returns `200`, and perform a low-value end-to-end test proving
+  both webhook fulfillment and callback recovery create a visible order.
 
 ---
 

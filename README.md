@@ -66,6 +66,9 @@ The storefront is available at `http://localhost:3000`. Never commit
 | `SANITY_API_WRITE_TOKEN` | Server only | Separate Editor token for carts, wishlists, orders, returns, and subscriptions |
 | `PAYSTACK_SECRET_KEY` | Server only | Paystack initialization, verification, and webhook signatures |
 | `NEXT_PUBLIC_BASE_URL` | Server/public config | Callback origin, such as `http://localhost:3000` or `https://shop-tka.vercel.app` |
+| `PAYMENT_OPERATIONS_SECRET` | Server only | Protects readiness and manual reconciliation endpoints; use a random 32+ character Production Secret |
+| `CRON_SECRET` | Server only | Authenticates Vercel Cron; use a different random 32+ character Production Secret |
+| `PAYMENT_ALERT_WEBHOOK_URL` | Server only | Optional HTTPS destination for sanitized payment failure alerts |
 | `AI_GATEWAY_API_KEY` | Server only | Local Vercel AI Gateway access |
 | `NEXT_PUBLIC_AI_ASSISTANT_ENABLED` | Public | Feature switch; keep `false` until Gateway credits/model access are ready |
 
@@ -82,6 +85,8 @@ pnpm lint       # run ESLint
 pnpm build      # create the verified Webpack production build
 pnpm start      # serve a completed production build
 pnpm typegen    # regenerate Sanity schema/query types
+pnpm payments:readiness                 # check deployed payment dependencies
+pnpm payments:reconcile -- order-...    # safely recover one paid reference
 ```
 
 Run `pnpm typegen` whenever a Sanity schema or typed GROQ query changes. Before
@@ -138,6 +143,42 @@ production data before a material migration.
    one order and adjust inventory at most once.
 7. The customer cart is cleared only after the order is confirmed in Sanity.
 
+Before initializing Paystack, checkout performs a Sanity dry-run mutation.
+This proves that the deployed write token can create an order without changing
+content. If the token is missing, revoked, stale, or lacks permission,
+checkout returns `503` and confirms that the customer has not been charged.
+
+### Payment operations
+
+Two server-only endpoints provide operational safeguards:
+
+- `GET /api/internal/payments/readiness` checks required variables, the
+  production callback URL, Paystack authentication, Sanity reads, and a
+  non-mutating Sanity write dry run.
+- `POST /api/internal/payments/reconcile` verifies one `order-...` reference
+  directly with Paystack and runs the shared idempotent fulfillment routine.
+
+Both require `Authorization: Bearer $PAYMENT_OPERATIONS_SECRET`. The supplied
+commands read the secret and base URL from `.env.local`; they never print the
+secret:
+
+```bash
+pnpm payments:readiness
+pnpm payments:reconcile -- order-your-paystack-reference
+```
+
+Vercel Cron calls `/api/cron/reconcile-payments` every day at 01:15 UTC
+(04:15 East Africa Time). It scans the last seven days of successful KES
+transactions created by this application, compares them with Sanity orders,
+and idempotently recovers missing ones. Vercel supplies
+`Authorization: Bearer $CRON_SECRET` automatically.
+
+Payment routes emit structured JSON events such as
+`payment.webhook_fulfillment.failed`, `payment.checkout_preflight.failed`, and
+`payment.cron_reconciliation.failed`. Configure a Vercel log alert for payment
+events at error level. If `PAYMENT_ALERT_WEBHOOK_URL` is present, the same
+failures are also sent as sanitized JSON without customer details or secrets.
+
 ### Production webhook
 
 The live Paystack webhook must be exactly:
@@ -152,6 +193,18 @@ live webhook still targeted an offline ngrok tunnel and received HTTP 404. The
 authenticated verification fallback now protects customers from that single
 failure path, but the Vercel webhook must still remain correctly configured.
 
+On 13 October 2026, another successful live payment reached Paystack with
+valid amount, customer, item, shipping, and address metadata, but neither the
+webhook nor the authenticated fallback created its Sanity order. The payment
+was recovered with the shared idempotent fulfillment routine: one order was
+created and inventory was decremented once. The same routine and configured
+write token worked locally, so verify the Vercel **Production** value of
+`SANITY_API_WRITE_TOKEN` (present, current, Editor-capable, and for the same
+Sanity project/dataset), then redeploy. A configured variable name alone is
+not sufficient—each release must prove a production function can create the
+order. Do not ask a customer to pay again while reconciling an already
+successful Paystack transaction.
+
 ### Payment release checklist
 
 Any change involving the cart, authentication, products, prices, stock,
@@ -162,6 +215,9 @@ protection must be treated as payment-affecting.
 - Confirm the initialized amount includes the current shipping fee.
 - Confirm Paystack returns to the expected success URL.
 - Confirm the webhook receives `200 OK` and the order appears in Sanity.
+- Confirm both the webhook and callback recovery functions can write with the
+  deployed Production `SANITY_API_WRITE_TOKEN`; after changing a Vercel
+  variable, redeploy before testing.
 - Confirm the customer sees the order under `/orders` and the cart clears.
 - Deliver the same event twice and confirm no duplicate order or stock change.
 - Test with webhook delivery unavailable and confirm server-side verification
@@ -187,6 +243,10 @@ Before promoting a production change:
 4. Test a payment end to end before considering payment work complete.
 5. Inspect Vercel function logs and Paystack webhook delivery details for any
    non-2xx response.
+6. Run `pnpm payments:readiness` against the deployed Production URL and require
+   an `ok: true` response before accepting live payments.
+7. Confirm the Vercel Cron job is enabled and its most recent run returned
+   `200`.
 
 Pushing a reviewed commit to the connected production branch triggers the
 normal Vercel redeployment. Environment-variable changes require a new

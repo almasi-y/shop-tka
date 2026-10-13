@@ -12,7 +12,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "typegen": "sanity schema extract && sanity typegen generate",
-    "seed:catalog": "node --env-file=.env.local scripts/seed-catalog.mjs"
+    "seed:catalog": "node --env-file=.env.local scripts/seed-catalog.mjs",
+    "payments:readiness": "node --env-file=.env.local scripts/payment-operations.mjs readiness",
+    "payments:reconcile": "node --env-file=.env.local scripts/payment-operations.mjs reconcile"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.100",

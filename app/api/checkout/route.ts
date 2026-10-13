@@ -4,6 +4,11 @@ import { PRODUCTS_BY_IDS_QUERY } from "@/lib/sanity/queries/products";
 import { shippingAddressSchema } from "@/lib/checkout/shipping-address";
 import { getShippingRates } from "@/lib/shipping/get-shipping-rates";
 import { getShippingFee } from "@/lib/shipping/kenya";
+import {
+  assertSanityOrderWritesReady,
+  PaymentReadinessError,
+} from "@/lib/payments/readiness";
+import { reportPaymentFailure } from "@/lib/payments/observability";
 
 const PAYSTACK_API_URL = "https://api.paystack.co/transaction/initialize";
 const CURRENCY = "KES";
@@ -230,6 +235,33 @@ export async function POST(request: Request) {
     }
 
     const reference = `order-${crypto.randomUUID()}`;
+    try {
+      await assertSanityOrderWritesReady();
+    } catch (error) {
+      await reportPaymentFailure(
+        "payment.checkout_preflight.failed",
+        {
+          reference,
+          failureCode:
+            error instanceof PaymentReadinessError
+              ? error.code
+              : "PAYMENT_PREFLIGHT_FAILED",
+        },
+        error,
+      );
+      return Response.json(
+        {
+          error:
+            "Checkout is temporarily unavailable. You have not been charged.",
+          code:
+            error instanceof PaymentReadinessError
+              ? error.code
+              : "PAYMENT_PREFLIGHT_FAILED",
+        },
+        { status: 503 },
+      );
+    }
+
     const response = await fetch(PAYSTACK_API_URL, {
       method: "POST",
       headers: {
@@ -269,7 +301,10 @@ export async function POST(request: Request) {
 
     const result = (await response.json()) as PaystackInitializeResponse;
     if (!response.ok || !result.status || !result.data?.authorization_url) {
-      console.error("Paystack initialization failed", result.message);
+      await reportPaymentFailure("payment.initialization.failed", {
+        reference,
+        paystackStatus: response.status,
+      });
       return Response.json(
         { error: "Unable to initialize Paystack checkout" },
         { status: 502 },
@@ -284,7 +319,11 @@ export async function POST(request: Request) {
       total: totalMajorUnits,
     });
   } catch (error) {
-    console.error("Checkout initialization failed", error);
+    await reportPaymentFailure(
+      "payment.checkout.unexpected_error",
+      {},
+      error,
+    );
     return Response.json(
       { error: "Unable to initialize checkout" },
       { status: 500 },

@@ -6,6 +6,7 @@ import {
   createTrackingEventKey,
   createTrackingNumber,
 } from "@/lib/orders/tracking";
+import { logPaymentEvent } from "@/lib/payments/observability";
 
 export type PaystackTransaction = {
   id?: number;
@@ -46,6 +47,7 @@ export class PaystackFulfillmentError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code: string,
   ) {
     super(message);
     this.name = "PaystackFulfillmentError";
@@ -60,6 +62,7 @@ export async function fulfillPaystackTransaction(
     throw new PaystackFulfillmentError(
       "Sanity writes are not configured",
       500,
+      "SANITY_WRITE_TOKEN_MISSING",
     );
   }
 
@@ -95,14 +98,22 @@ export async function fulfillPaystackTransaction(
     ) ||
     new Set(productIds).size !== productIds.length
   ) {
-    throw new PaystackFulfillmentError("Incomplete Paystack metadata", 400);
+    throw new PaystackFulfillmentError(
+      "Incomplete Paystack metadata",
+      400,
+      "PAYSTACK_METADATA_INVALID",
+    );
   }
 
   if (
     expectedClerkUserId &&
     metadata.clerkUserId !== expectedClerkUserId
   ) {
-    throw new PaystackFulfillmentError("Order not found", 404);
+    throw new PaystackFulfillmentError(
+      "Order not found",
+      404,
+      "PAYSTACK_OWNER_MISMATCH",
+    );
   }
 
   const existingOrder = await writeClient.fetch(
@@ -128,6 +139,7 @@ export async function fulfillPaystackTransaction(
     throw new PaystackFulfillmentError(
       "Paystack payment validation failed",
       400,
+      "PAYSTACK_PAYMENT_VALIDATION_FAILED",
     );
   }
 
@@ -147,6 +159,7 @@ export async function fulfillPaystackTransaction(
     throw new PaystackFulfillmentError(
       "Paystack customer email is missing",
       400,
+      "PAYSTACK_CUSTOMER_EMAIL_MISSING",
     );
   }
 
@@ -228,7 +241,7 @@ export async function fulfillPaystackTransaction(
         inventoryAdjusted: false,
         inventoryIssue,
       });
-      console.error("Paid order requires inventory reconciliation", {
+      logPaymentEvent("error", "payment.inventory_reconciliation.required", {
         orderId,
         reference,
         inventoryIssue,
@@ -271,11 +284,11 @@ export async function fulfillPaystackTransaction(
           inventoryAdjusted: false,
           inventoryIssue: "Inventory changed repeatedly while recording payment",
         });
-        console.error("Paid order requires inventory reconciliation", {
+        logPaymentEvent("error", "payment.inventory_reconciliation.required", {
           orderId,
           reference,
-          error,
-        });
+          inventoryIssue: "concurrent inventory changes",
+        }, error);
         return { orderId: createdOrder._id, duplicate: false };
       }
     }

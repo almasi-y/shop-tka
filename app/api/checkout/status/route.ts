@@ -2,18 +2,13 @@ import { auth } from "@clerk/nextjs/server";
 import { serverReadClient } from "@/sanity/lib/server-client";
 import { ORDER_STATUS_BY_PAYSTACK_REFERENCE_QUERY } from "@/lib/sanity/queries/orders";
 import {
-  fulfillPaystackTransaction,
-  PaystackFulfillmentError,
-  type PaystackTransaction,
-} from "@/lib/checkout/fulfill-paystack-transaction";
-
-const PAYSTACK_VERIFY_URL = "https://api.paystack.co/transaction/verify";
-
-type PaystackVerifyResponse = {
-  status?: boolean;
-  message?: string;
-  data?: PaystackTransaction;
-};
+  PaymentReconciliationError,
+  reconcilePaystackReference,
+} from "@/lib/payments/reconcile";
+import {
+  logPaymentEvent,
+  reportPaymentFailure,
+} from "@/lib/payments/observability";
 
 function getReference(request: Request) {
   return new URL(request.url).searchParams.get("reference")?.trim();
@@ -75,46 +70,12 @@ export async function POST(request: Request) {
     });
   }
 
-  const secret = process.env.PAYSTACK_SECRET_KEY;
-  if (!secret) {
-    return Response.json(
-      { error: "Paystack is not configured" },
-      { status: 500 },
-    );
-  }
-
   try {
-    const response = await fetch(
-      `${PAYSTACK_VERIFY_URL}/${encodeURIComponent(reference)}`,
-      {
-        headers: { Authorization: `Bearer ${secret}` },
-        cache: "no-store",
-      },
-    );
-    const verification = (await response.json()) as PaystackVerifyResponse;
-
-    if (
-      !response.ok ||
-      !verification.status ||
-      !verification.data ||
-      verification.data.reference !== reference
-    ) {
-      console.error("Paystack reconciliation verification failed", {
-        reference,
-        status: response.status,
-        message: verification.message,
-      });
-      return Response.json({ confirmed: false });
-    }
-
-    if (verification.data.status !== "success") {
-      return Response.json({ confirmed: false });
-    }
-
-    const result = await fulfillPaystackTransaction(
-      verification.data,
-      userId,
-    );
+    const result = await reconcilePaystackReference(reference, userId);
+    logPaymentEvent("info", "payment.callback_reconciliation.succeeded", {
+      reference,
+      duplicate: result.duplicate,
+    });
     return Response.json({
       confirmed: true,
       orderId: result.orderId,
@@ -122,13 +83,29 @@ export async function POST(request: Request) {
       reconciled: true,
     });
   } catch (error) {
-    const status =
-      error instanceof PaystackFulfillmentError ? error.status : 502;
-    const message =
-      error instanceof PaystackFulfillmentError
-        ? error.message
-        : "Unable to verify payment";
-    console.error("Paystack reconciliation failed", { reference, error });
-    return Response.json({ error: message }, { status });
+    const reconciliationError =
+      error instanceof PaymentReconciliationError ? error : null;
+    if (
+      reconciliationError?.code === "PAYSTACK_TRANSACTION_NOT_SUCCESSFUL"
+    ) {
+      return Response.json({ confirmed: false });
+    }
+    await reportPaymentFailure(
+      "payment.callback_reconciliation.failed",
+      {
+        reference,
+        failureCode:
+          reconciliationError?.code ?? "PAYMENT_RECONCILIATION_FAILED",
+      },
+      error,
+    );
+    return Response.json(
+      {
+        error: reconciliationError?.message ?? "Unable to verify payment",
+        code:
+          reconciliationError?.code ?? "PAYMENT_RECONCILIATION_FAILED",
+      },
+      { status: reconciliationError?.status ?? 502 },
+    );
   }
 }
