@@ -43,12 +43,11 @@ export function CheckoutClient({
   const shippingFee = shippingAddress.county
     ? getShippingFee(shippingAddress.county, shippingRates)
     : 0;
-  const isAddressComplete = [
-    shippingAddress.name,
-    shippingAddress.line1,
-    shippingAddress.city,
-    shippingAddress.county,
-  ].every((value) => value.trim().length >= 2);
+  const isAddressComplete =
+    shippingAddress.name.trim().length >= 2 &&
+    shippingAddress.line1.trim().length >= 3 &&
+    shippingAddress.city.trim().length >= 2 &&
+    shippingAddress.county.length > 0;
 
   const updateAddress = (field: keyof ShippingAddressForm, value: string) => {
     setShippingAddress((current) => ({ ...current, [field]: value }));
@@ -245,18 +244,10 @@ export function CheckoutClient({
               <CheckoutButton
                 shippingAddress={shippingAddress}
                 shippingFee={shippingFee}
-                disabled={hasStockIssues || isLoading || !isAddressComplete}
+                isAddressComplete={isAddressComplete}
+                disabled={hasStockIssues || isLoading}
               />
-              {!isAddressComplete && (
-                <p className="mt-2 text-center text-xs text-zinc-500 dark:text-zinc-400">
-                  Enter your shipping address to continue.
-                </p>
-              )}
             </div>
-
-            <p className="mt-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
-              You&apos;ll be redirected to Paystack&apos;s secure checkout
-            </p>
           </div>
         </div>
       </div>

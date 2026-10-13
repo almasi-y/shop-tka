@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  experimental: {
+    // TypeScript 5 provides the compiler API. This avoids unreliable output
+    // capture from Next's detached `tsc --showConfig` subprocess locally.
+    useTypeScriptCli: false,
+  },
   images: {
     remotePatterns: [
       {

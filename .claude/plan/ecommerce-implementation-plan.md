@@ -1,5 +1,7 @@
 # E-Commerce AI App Implementation Plan — Code Innovators Shop (v2)
 
+**Last materially updated:** 13 October 2026
+
 **Overview:** Build a complete AI-powered e-commerce platform using Next.js 16,
 Clerk authentication, Sanity for products/categories/brands/orders, Paystack
 for payments, and Vercel AI SDK for intelligent product search.
@@ -14,6 +16,60 @@ products, images, and descriptions are all Sanity content — never hardcoded
 in application code. The category tree in particular must support nesting
 (main category → subcategory) generically, not as a fixed list in the
 codebase.
+
+## Living Plan and Regression-Critical Rules
+
+This file is the project's living source of truth. Update it regularly—not
+only at the end of the project—whenever any of the following happens:
+
+- a feature, phase, or migration is completed;
+- an architectural or product decision changes;
+- a production incident reveals a new invariant or operational requirement;
+- an external integration, environment variable, route, schema, or deployment
+  procedure changes; or
+- a known limitation, deferred task, or required follow-up is discovered.
+
+Record the current state and the reason for a material decision. Never place
+API keys, tokens, customer details, or other secrets in this file.
+
+### Payment safety is a permanent release gate
+
+Payments, paid-order creation, inventory adjustment, shipping totals, and
+customer order visibility are regression-critical. A change that touches or
+can indirectly affect checkout, cart data, authentication, shipping rates,
+Paystack metadata/callbacks/webhooks, Sanity clients/order schemas/order
+queries, route protection, environment variables, or deployment routing must
+not be treated as complete until the payment flow has been reverified.
+
+Every payment-affecting change must preserve or explicitly migrate in-flight
+transactions created by the currently deployed version. The correction must
+also recover already-successful payments that are missing an order; customers
+must never be asked to pay twice because application code changed.
+
+Minimum payment regression checks:
+
+1. The server recalculates product prices, stock, shipping, and the final
+   Paystack amount; it never trusts a browser-supplied total.
+2. The Paystack reference, status, currency, amount, Clerk user, item arrays,
+   shipping fee, and shipping address are validated before an order is made.
+3. Both the signed webhook and the authenticated callback verification path
+   use the same order-fulfillment routine.
+4. Fulfillment is idempotent by Paystack reference: retries, duplicate
+   webhooks, callback refreshes, and concurrent requests create one order and
+   decrement inventory at most once.
+5. A user can reconcile only a transaction whose Paystack metadata contains
+   that same Clerk user ID.
+6. The cart clears only after the application has confirmed that the order
+   exists; a pending or failed confirmation retains it.
+7. Run focused lint and TypeScript checks, then a production build and an
+   end-to-end test covering browser → checkout API → Paystack → webhook or
+   verification fallback → Sanity order → customer Orders page.
+8. In both Paystack test and live modes, confirm the configured webhook URL,
+   inspect the delivery response, and verify that Vercel has the matching
+   Paystack secret plus Sanity read/write tokens for the target environment.
+9. Test one duplicate delivery and one webhook-unavailable scenario. Both
+   must finish safely without duplicate orders, duplicate stock deductions,
+   or an endless confirmation screen.
 
 ---
 
@@ -327,23 +383,27 @@ Add cart provider to layout, cart icon in header with item count
 ### 5.1 Transaction Initialize API (`app/api/checkout/route.ts`)
 
 - Call Paystack's `POST /transaction/initialize` REST endpoint (plain
-  `fetch`, using `PAYSTACK_SECRET_KEY`) with the cart total, customer
-  email, and metadata (`clerkUserId`, `productIds`)
+  `fetch`, using `PAYSTACK_SECRET_KEY`) with the server-calculated cart total,
+  shipping fee, customer email, and metadata (`clerkUserId`, `productIds`,
+  `quantities`, price snapshots, and the validated shipping address)
+- Re-fetch products and shipping settings on the server; validate stock and
+  reject stale prices or shipping fees before initializing Paystack
 - Return the `authorization_url` Paystack gives back
 
 ### 5.2 Checkout Page (`app/checkout/page.tsx`)
 
 - Protected route (requires Clerk auth)
 - Display cart summary
-- "Pay with Paystack" button
+- "Proceed to Checkout" button
 - Redirect to the `authorization_url` (Paystack's hosted payment page) —
   or use `react-paystack`'s inline popup as an alternative to a full
   redirect, your call once you see both in practice
 
 ### 5.3 Success Page (`app/checkout/success/page.tsx`)
 
-- Display order confirmation
-- Clear cart on success
+- Verify the returned reference through the authenticated server endpoint
+- Display order confirmation only after the Sanity order exists
+- Clear the cart only after confirmed order creation
 - Link to orders page
 
 ---
@@ -358,16 +418,34 @@ Handle the `charge.success` event:
   body, signed with `PAYSTACK_SECRET_KEY`) — reject anything that doesn't
   match
 - Extract payment details
-- Create order document in Sanity
-- Include: userId, products, address, `paystackReference`, status
+- Validate successful status, KES currency, paid amount, ownership, items,
+  price snapshots, shipping fee, and shipping address
+- Create the Sanity order and adjust inventory atomically where possible
+- Use a deterministic order ID/reference check so duplicate webhook delivery
+  cannot create a duplicate order or deduct inventory twice
+- Include: user ID, products, quantities, price snapshots, address, shipping,
+  `paystackReference`, payment/fulfillment status, and tracking information
 
-### 6.2 Orders List Page (`app/orders/page.tsx`)
+### 6.2 Payment Reconciliation Fallback
+
+- `lib/checkout/fulfill-paystack-transaction.ts` is the single shared,
+  idempotent fulfillment routine used by both payment confirmation paths.
+- The webhook remains the primary path.
+- `POST /api/checkout/status?reference=...` is the authenticated recovery
+  path. If Sanity has no order, it verifies the transaction directly with
+  Paystack, confirms that its metadata belongs to the signed-in Clerk user,
+  and invokes the same fulfillment routine.
+- `GET /api/checkout/status` remains a read-only order-status check.
+- This fallback is required protection against webhook configuration errors,
+  temporary delivery outages, and callback/webhook timing races.
+
+### 6.3 Orders List Page (`app/orders/page.tsx`)
 
 - Protected route
 - Fetch orders from Sanity filtered by `clerkUserId`
 - Display order cards: date, total, status
 
-### 6.3 Order Detail Page (`app/orders/[id]/page.tsx`)
+### 6.4 Order Detail Page (`app/orders/[id]/page.tsx`)
 
 - Fetch single order by ID
 - Verify ownership (clerkUserId match)
@@ -464,9 +542,29 @@ Define tools for:
 ### 9.3 Deployment
 
 - Configure Vercel environment variables
-- Set up Paystack webhook endpoint in production (register the URL in the
-  Paystack dashboard)
+- Set the **live** Paystack webhook URL to
+  `https://shop-tka.vercel.app/api/webhooks/paystack`; do not leave a temporary
+  ngrok URL configured after local testing. Test and live webhook settings
+  must each point to the intended environment.
 - Test full flow in production mode (Paystack test mode first)
+
+### 9.4 Production Payment Incident — 9 October 2026
+
+- **Symptom:** a successful live payment remained on “Confirming Payment,”
+  and no matching Sanity order existed.
+- **Verified cause:** Paystack's live `charge.success` event was still being
+  delivered to the former ngrok URL. That tunnel was offline and returned
+  HTTP 404; Paystack showed the event as pending/retrying after six attempts.
+- **Correction in this codebase:** fulfillment was extracted into the shared
+  idempotent routine described in Section 6.2, and the success flow now uses
+  server-side Paystack verification as a recovery path when the webhook has
+  not created the order.
+- **Required operational correction:** update the live Paystack webhook URL
+  to the Vercel endpoint above, deploy the recovery code, and retry the failed
+  event or revisit the signed-in success URL so the paid order is reconciled.
+- **Release lesson:** every move between localhost/ngrok/preview/production
+  must include a Paystack webhook-target check and a real delivery-response
+  check; a working callback URL does not prove the webhook is configured.
 
 ---
 
@@ -569,6 +667,9 @@ moving to the next:
 | Decision | Choice |
 |----------|--------|
 | Package Manager | pnpm |
+| Runtime | Node.js 24 LTS, pinned by `.nvmrc` and `package.json`; do not use Node.js 25 for this project |
+| Build type checker | Next.js TypeScript compiler API (`experimental.useTypeScriptCli: false`) while the project uses TypeScript 5 |
+| Production bundler | Webpack via `next build --webpack`; the current Turbopack build did not terminate reliably for the combined storefront and Studio bundle |
 | CMS (Products, Categories, Brands, Orders) | Sanity |
 | Category structure | Self-referencing `parentCategory` — supports nesting, no hardcoded depth |
 | AI Provider | Vercel AI SDK |

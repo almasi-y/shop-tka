@@ -1,43 +1,14 @@
 import crypto from "node:crypto";
-import { writeClient } from "@/sanity/lib/client";
-import { ORDER_BY_PAYSTACK_REFERENCE_QUERY } from "@/lib/sanity/queries/orders";
-import { shippingAddressSchema } from "@/lib/checkout/shipping-address";
 import {
-  createTrackingEventKey,
-  createTrackingNumber,
-} from "@/lib/orders/tracking";
+  fulfillPaystackTransaction,
+  PaystackFulfillmentError,
+  type PaystackTransaction,
+} from "@/lib/checkout/fulfill-paystack-transaction";
 
 type PaystackEvent = {
   event?: string;
-  data?: {
-    id?: number;
-    status?: string;
-    reference?: string;
-    amount?: number;
-    currency?: string;
-    email?: string;
-    customer?: {
-      email?: string;
-      customer_code?: string;
-    };
-    metadata?: {
-      clerkUserId?: string;
-      productIds?: string[];
-      quantities?: number[];
-      productPrices?: number[];
-      shippingFee?: number;
-      shippingAddress?: unknown;
-    };
-  };
+  data?: PaystackTransaction;
 };
-
-type InventoryProduct = {
-  _id: string;
-  _rev: string;
-  stock: number | null;
-};
-
-const MAX_INVENTORY_ATTEMPTS = 3;
 
 function signaturesMatch(body: string, signature: string, secret: string) {
   if (!/^[a-f\d]{128}$/i.test(signature)) return false;
@@ -58,13 +29,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "Paystack is not configured" }, { status: 500 });
   }
 
-  if (!process.env.SANITY_API_WRITE_TOKEN) {
-    return Response.json(
-      { error: "Sanity writes are not configured" },
-      { status: 500 },
-    );
-  }
-
   const body = await request.text();
   const signature = request.headers.get("x-paystack-signature");
 
@@ -83,207 +47,20 @@ export async function POST(request: Request) {
     return Response.json({ received: true });
   }
 
-  const transaction = event.data;
-  const reference = transaction.reference;
-  const metadata = transaction.metadata;
-  const productIds = metadata?.productIds;
-  const quantities = metadata?.quantities;
-  const productPrices = metadata?.productPrices;
-  const shippingFee = metadata?.shippingFee;
-  const parsedAddress = shippingAddressSchema.safeParse(
-    metadata?.shippingAddress,
-  );
-
-  if (
-    !reference ||
-    !metadata?.clerkUserId ||
-    !productIds?.length ||
-    !quantities ||
-    !productPrices ||
-    typeof shippingFee !== "number" ||
-    !Number.isSafeInteger(shippingFee) ||
-    shippingFee < 0 ||
-    !parsedAddress.success ||
-    productIds.length !== quantities.length ||
-    productIds.length !== productPrices.length ||
-    productIds.some((productId) => typeof productId !== "string" || !productId) ||
-    quantities.some(
-      (quantity) => !Number.isSafeInteger(quantity) || quantity < 1,
-    ) ||
-    productPrices.some(
-      (price) =>
-        typeof price !== "number" || !Number.isFinite(price) || price <= 0,
-    ) ||
-    new Set(productIds).size !== productIds.length
-  ) {
-    return Response.json({ error: "Incomplete Paystack metadata" }, { status: 400 });
+  try {
+    const result = await fulfillPaystackTransaction(event.data);
+    return Response.json({ received: true, ...result });
+  } catch (error) {
+    const status =
+      error instanceof PaystackFulfillmentError ? error.status : 500;
+    const message =
+      error instanceof PaystackFulfillmentError
+        ? error.message
+        : "Unable to record paid order";
+    console.error("Paystack webhook fulfillment failed", {
+      reference: event.data.reference,
+      error,
+    });
+    return Response.json({ error: message }, { status });
   }
-
-  const existingOrder = await writeClient.fetch(ORDER_BY_PAYSTACK_REFERENCE_QUERY, {
-    paystackReference: reference,
-  });
-
-  if (existingOrder) {
-    return Response.json({ received: true, duplicate: true });
-  }
-
-  const subtotal = quantities.reduce(
-    (sum, quantity, index) => sum + productPrices[index] * quantity,
-    0,
-  );
-  const total = subtotal + shippingFee;
-
-  if (
-    transaction.status !== "success" ||
-    transaction.currency?.toUpperCase() !== "KES" ||
-    transaction.amount !== Math.round(total * 100)
-  ) {
-    return Response.json({ error: "Paystack payment validation failed" }, { status: 400 });
-  }
-
-  const referenceHash = crypto
-    .createHash("sha256")
-    .update(reference)
-    .digest("hex");
-  const createdAt = new Date().toISOString();
-  const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${referenceHash.slice(0, 6).toUpperCase()}`;
-  const orderId = `order.paystack.${referenceHash}`;
-  const trackingNumber = createTrackingNumber(reference, createdAt);
-  const customerEmail = transaction.customer?.email ?? transaction.email;
-  if (!customerEmail) {
-    return Response.json({ error: "Paystack customer email is missing" }, { status: 400 });
-  }
-
-  const orderDocument = {
-    _id: orderId,
-    _type: "order",
-    orderNumber,
-    clerkUserId: metadata.clerkUserId,
-    customerEmail,
-    shippingAddress: parsedAddress.data,
-    products: productIds.map((_ref, index) => ({
-      _key: crypto
-        .createHash("sha1")
-        .update(`${reference}:${index}:${_ref}`)
-        .digest("hex")
-        .slice(0, 16),
-      _type: "reference",
-      _ref,
-    })),
-    quantities,
-    productPrices,
-    subtotal,
-    shippingFee,
-    totalPrice: total,
-    status: "paid",
-    paymentStatus: "paid",
-    fulfillmentStatus: "processing",
-    trackingNumber,
-    trackingEvents: [
-      {
-        _key: createTrackingEventKey(
-          reference,
-          "payment_confirmed",
-          createdAt,
-        ),
-        _type: "trackingEvent",
-        status: "payment_confirmed",
-        occurredAt: createdAt,
-        publicMessage: "Payment confirmed and order received.",
-        source: "system",
-      },
-      {
-        _key: createTrackingEventKey(reference, "processing", createdAt),
-        _type: "trackingEvent",
-        status: "processing",
-        occurredAt: createdAt,
-        publicMessage: "Your order is being prepared.",
-        source: "system",
-      },
-    ],
-    paystackReference: reference,
-    createdAt,
-  };
-
-  for (let attempt = 0; attempt < MAX_INVENTORY_ATTEMPTS; attempt += 1) {
-    const products = await writeClient.fetch<InventoryProduct[]>(
-      `*[_type == "product" && _id in $ids]{_id, _rev, stock}`,
-      { ids: productIds },
-    );
-    const productById = new Map(
-      products.map((product) => [product._id, product]),
-    );
-    const inventoryIssue = productIds
-      .map((productId, index) => {
-        const product = productById.get(productId);
-        if (!product) return `Product ${productId} no longer exists`;
-        if ((product.stock ?? 0) < quantities[index]) {
-          return `Product ${productId} has insufficient stock`;
-        }
-        return null;
-      })
-      .find((issue): issue is string => issue !== null);
-
-    // A payment is already complete at this point. Always retain its order,
-    // even when inventory can no longer be decremented safely.
-    if (inventoryIssue) {
-      const createdOrder = await writeClient.createIfNotExists({
-        ...orderDocument,
-        inventoryAdjusted: false,
-        inventoryIssue,
-      });
-      console.error("Paid order requires inventory reconciliation", {
-        orderId,
-        reference,
-        inventoryIssue,
-      });
-      return Response.json({ received: true, orderId: createdOrder._id });
-    }
-
-    try {
-      const transactionBuilder = productIds.reduce(
-        (transaction, productId, index) => {
-          const product = productById.get(productId)!;
-          return transaction.patch(productId, (patch) =>
-            patch
-              .ifRevisionId(product._rev)
-              .dec({ stock: quantities[index] }),
-          );
-        },
-        writeClient.transaction().create({
-          ...orderDocument,
-          inventoryAdjusted: true,
-        }),
-      );
-      const commitResult = await transactionBuilder.commit();
-      return Response.json({
-        received: true,
-        orderId: commitResult.results[0]?.id,
-      });
-    } catch (error) {
-      // A deterministic document ID closes the race between concurrent retries.
-      const duplicate = await writeClient.fetch(
-        ORDER_BY_PAYSTACK_REFERENCE_QUERY,
-        { paystackReference: reference },
-      );
-      if (duplicate) {
-        return Response.json({ received: true, duplicate: true });
-      }
-      if (attempt === MAX_INVENTORY_ATTEMPTS - 1) {
-        const createdOrder = await writeClient.createIfNotExists({
-          ...orderDocument,
-          inventoryAdjusted: false,
-          inventoryIssue: "Inventory changed repeatedly while recording payment",
-        });
-        console.error("Paid order requires inventory reconciliation", {
-          orderId,
-          reference,
-          error,
-        });
-        return Response.json({ received: true, orderId: createdOrder._id });
-      }
-    }
-  }
-
-  return Response.json({ received: true, orderId });
 }

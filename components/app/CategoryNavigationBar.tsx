@@ -35,12 +35,12 @@ export async function CategoryNavigationBar() {
           <LayoutGrid className="size-4" aria-hidden="true" />
           All Categories
         </Link>
-        <ul className="flex min-w-max items-center">
+        <ul className="ml-2 flex min-w-max items-center gap-2 sm:ml-4 sm:gap-4 lg:gap-7">
           {topLevelCategories.map((category) => (
             <li key={category._id}>
               <Link
                 href={`/category/${category.slug}`}
-                className="inline-flex min-h-11 items-center px-4 text-sm font-medium whitespace-nowrap text-zinc-700 transition-colors hover:bg-brand-mist hover:text-brand-night dark:text-zinc-300 dark:hover:bg-brand-night/40 dark:hover:text-brand-periwinkle-soft"
+                className="inline-flex min-h-11 items-center px-2 text-sm font-medium whitespace-nowrap text-zinc-700 transition-colors hover:bg-brand-mist hover:text-brand-night dark:text-zinc-300 dark:hover:bg-brand-night/40 dark:hover:text-brand-periwinkle-soft sm:px-3"
               >
                 {category.title}
               </Link>

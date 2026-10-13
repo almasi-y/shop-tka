@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -10,71 +10,78 @@ import type { ShippingAddressForm } from "@/lib/checkout/shipping-address";
 
 interface CheckoutButtonProps {
   disabled?: boolean;
+  isAddressComplete: boolean;
   shippingAddress: ShippingAddressForm;
   shippingFee: number;
 }
 
 export function CheckoutButton({
   disabled,
+  isAddressComplete,
   shippingAddress,
   shippingFee,
 }: CheckoutButtonProps) {
   const router = useRouter();
   const items = useCartItems();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
 
   const handleCheckout = () => {
-    setError(null);
+    if (!isAddressComplete) {
+      toast.error("Complete your shipping details", {
+        description:
+          "Enter your full name, address, city and county before continuing.",
+      });
+      return;
+    }
 
     startTransition(async () => {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          shippingAddress,
-          expectedShippingFee: shippingFee,
-        }),
-      });
-      const result = await response.json();
+      try {
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items,
+            shippingAddress,
+            expectedShippingFee: shippingFee,
+          }),
+        });
+        const result = await response.json();
 
-      if (response.ok && result.authorizationUrl) {
-        router.push(result.authorizationUrl);
-      } else {
-        setError(result.error ?? "Checkout failed");
-        toast.error("Checkout Error", {
-          description: result.error ?? "Something went wrong",
+        if (response.ok && result.authorizationUrl) {
+          router.push(result.authorizationUrl);
+          return;
+        }
+
+        toast.error("Checkout error", {
+          description: result.error ?? "Something went wrong.",
+        });
+      } catch (checkoutError) {
+        console.error("Checkout request failed", checkoutError);
+        toast.error("Checkout error", {
+          description: "Unable to start checkout. Please try again.",
         });
       }
     });
   };
 
   return (
-    <div className="space-y-2">
-      <Button
-        onClick={handleCheckout}
-        disabled={disabled || isPending || items.length === 0}
-        size="lg"
-        className="w-full"
-      >
-        {isPending ? (
-          <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <CreditCard className="mr-2 h-5 w-5" />
-            Proceed to Checkout
-          </>
-        )}
-      </Button>
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center">
-          {error}
-        </p>
+    <Button
+      onClick={handleCheckout}
+      disabled={disabled || isPending || items.length === 0}
+      size="lg"
+      className="w-full"
+    >
+      {isPending ? (
+        <>
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          Processing...
+        </>
+      ) : (
+        <>
+          <CreditCard className="mr-2 h-5 w-5" />
+          Proceed to Checkout
+        </>
       )}
-    </div>
+    </Button>
   );
 }

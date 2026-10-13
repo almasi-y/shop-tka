@@ -24,6 +24,9 @@ export function WishlistButton({
   className,
 }: WishlistButtonProps) {
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const [guestWishlisted, setGuestWishlisted] = useState(() =>
+    isGuestWishlisted(productId),
+  );
   const [wishlistState, setWishlistState] = useState<{
     userId: string;
     wishlisted: boolean;
@@ -31,15 +34,7 @@ export function WishlistButton({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    if (!isSignedIn) {
-      setWishlistState({
-        userId: "guest",
-        wishlisted: isGuestWishlisted(productId),
-      });
-      return;
-    }
+    if (!isLoaded || !isSignedIn || !userId) return;
 
     const controller = new AbortController();
     void fetch(`/api/wishlist?productId=${encodeURIComponent(productId)}`, {
@@ -51,12 +46,10 @@ export function WishlistButton({
         return (await response.json()) as { wishlisted?: boolean };
       })
       .then((result) => {
-        if (userId) {
-          setWishlistState({
-            userId,
-            wishlisted: Boolean(result.wishlisted),
-          });
-        }
+        setWishlistState({
+          userId,
+          wishlisted: Boolean(result.wishlisted),
+        });
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -69,7 +62,7 @@ export function WishlistButton({
   async function toggleWishlist() {
     if (!isSignedIn || !userId) {
       const wishlisted = toggleGuestWishlist(productId);
-      setWishlistState({ userId: "guest", wishlisted });
+      setGuestWishlisted(wishlisted);
       notifyWishlistUpdated();
       toast.success(
         wishlisted
@@ -124,10 +117,13 @@ export function WishlistButton({
     }
   }
 
-  const activeWishlistOwner = isSignedIn && userId ? userId : "guest";
-  const isWishlisted = Boolean(
-    wishlistState?.userId === activeWishlistOwner && wishlistState.wishlisted,
-  );
+  const isWishlisted = isSignedIn
+    ? Boolean(
+        userId &&
+          wishlistState?.userId === userId &&
+          wishlistState.wishlisted,
+      )
+    : guestWishlisted;
   const button = (
     <Button
       type="button"

@@ -30,7 +30,7 @@ export function SuccessClient({ reference }: SuccessClientProps) {
       try {
         const response = await fetch(
           `/api/checkout/status?reference=${encodeURIComponent(reference)}`,
-          { cache: "no-store" },
+          { method: "POST", cache: "no-store" },
         );
         const result = (await response.json()) as {
           confirmed?: boolean;
