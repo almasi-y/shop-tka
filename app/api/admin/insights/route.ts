@@ -1,5 +1,7 @@
 import { generateText, gateway } from "ai";
+import { currentUser } from "@clerk/nextjs/server";
 import { client } from "@/sanity/lib/client";
+import { isAdminEmail } from "@/lib/auth/admin";
 import {
   ORDERS_LAST_7_DAYS_QUERY,
   ORDER_STATUS_DISTRIBUTION_QUERY,
@@ -11,6 +13,25 @@ import {
 
 export async function GET(request: Request) {
   try {
+    const user = await currentUser();
+    const isAdmin = isAdminEmail(
+      user?.emailAddresses.map(({ emailAddress }) => emailAddress) ?? [],
+    );
+
+    if (!user) {
+      return Response.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    if (!isAdmin) {
+      return Response.json(
+        { error: "Administrator access required" },
+        { status: 403 },
+      );
+    }
+
     const authorization = request.headers.get("authorization");
     const token = authorization?.startsWith("Bearer ")
       ? authorization.slice("Bearer ".length)
