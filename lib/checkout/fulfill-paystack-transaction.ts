@@ -6,7 +6,10 @@ import {
   createTrackingEventKey,
   createTrackingNumber,
 } from "@/lib/orders/tracking";
-import { logPaymentEvent } from "@/lib/payments/observability";
+import {
+  logPaymentEvent,
+  reportPaymentFailure,
+} from "@/lib/payments/observability";
 
 export type PaystackTransaction = {
   id?: number;
@@ -36,12 +39,66 @@ type InventoryProduct = {
   stock: number | null;
 };
 
+type SavedCartItem = {
+  _key: string;
+  _type: "object";
+  product: {
+    _type: "reference";
+    _ref: string;
+  };
+  productName: string;
+  priceAtSave: number;
+  quantity: number;
+  imageUrl?: string;
+  slug?: string;
+};
+
+type SavedCart = {
+  _id: string;
+  _rev: string;
+  items: SavedCartItem[] | null;
+};
+
 type FulfillmentResult = {
   orderId: string;
   duplicate: boolean;
 };
 
 const MAX_INVENTORY_ATTEMPTS = 3;
+
+const SAVED_CART_FOR_FULFILLMENT_QUERY = `*[
+  _type == "shoppingCart"
+  && clerkUserId == $clerkUserId
+] | order(updatedAt desc)[0] {
+  _id,
+  _rev,
+  items
+}`;
+
+function removePurchasedItems(
+  cartItems: SavedCartItem[] | null,
+  productIds: string[],
+  quantities: number[],
+) {
+  const remainingPurchasedQuantities = new Map(
+    productIds.map((productId, index) => [productId, quantities[index]]),
+  );
+
+  return (cartItems ?? []).flatMap((item) => {
+    const purchasedQuantity = remainingPurchasedQuantities.get(
+      item.product._ref,
+    );
+    if (!purchasedQuantity) return [item];
+
+    if (item.quantity <= purchasedQuantity) {
+      remainingPurchasedQuantities.delete(item.product._ref);
+      return [];
+    }
+
+    remainingPurchasedQuantities.delete(item.product._ref);
+    return [{ ...item, quantity: item.quantity - purchasedQuantity }];
+  });
+}
 
 export class PaystackFulfillmentError extends Error {
   constructor(
@@ -215,12 +272,24 @@ export async function fulfillPaystackTransaction(
   };
 
   for (let attempt = 0; attempt < MAX_INVENTORY_ATTEMPTS; attempt += 1) {
-    const products = await writeClient.fetch<InventoryProduct[]>(
-      `*[_type == "product" && _id in $ids]{_id, _rev, stock}`,
-      { ids: productIds },
-    );
+    const [products, savedCart] = await Promise.all([
+      writeClient.fetch<InventoryProduct[]>(
+        `*[_type == "product" && _id in $ids]{_id, _rev, stock}`,
+        { ids: productIds },
+      ),
+      writeClient.fetch<SavedCart | null>(
+        SAVED_CART_FOR_FULFILLMENT_QUERY,
+        { clerkUserId: metadata.clerkUserId },
+      ),
+    ]);
     const productById = new Map(
       products.map((product) => [product._id, product]),
+    );
+    const cartClearedAt = new Date().toISOString();
+    const remainingCartItems = removePurchasedItems(
+      savedCart?.items ?? null,
+      productIds,
+      quantities,
     );
     const inventoryIssue = productIds
       .map((productId, index) => {
@@ -236,21 +305,58 @@ export async function fulfillPaystackTransaction(
     // Payment has already completed. Retain the paid order even if stock now
     // needs manual reconciliation.
     if (inventoryIssue) {
-      const createdOrder = await writeClient.createIfNotExists({
-        ...orderDocument,
-        inventoryAdjusted: false,
-        inventoryIssue,
-      });
-      logPaymentEvent("error", "payment.inventory_reconciliation.required", {
-        orderId,
-        reference,
-        inventoryIssue,
-      });
-      return { orderId: createdOrder._id, duplicate: false };
+      try {
+        let transactionBuilder = writeClient
+          .transaction()
+          .createIfNotExists({
+            ...orderDocument,
+            inventoryAdjusted: false,
+            inventoryIssue,
+            cartClearedAt,
+          });
+        if (savedCart) {
+          transactionBuilder = transactionBuilder.patch(
+            savedCart._id,
+            (patch) =>
+              patch
+                .ifRevisionId(savedCart._rev)
+                .set({ items: remainingCartItems, updatedAt: cartClearedAt }),
+          );
+        }
+        await transactionBuilder.commit();
+        logPaymentEvent("error", "payment.inventory_reconciliation.required", {
+          orderId,
+          reference,
+          inventoryIssue,
+        });
+        return { orderId, duplicate: false };
+      } catch (error) {
+        const duplicate = await writeClient.fetch(
+          ORDER_BY_PAYSTACK_REFERENCE_QUERY,
+          { paystackReference: reference },
+        );
+        if (duplicate) {
+          return { orderId: duplicate._id, duplicate: true };
+        }
+        if (attempt === MAX_INVENTORY_ATTEMPTS - 1) {
+          const createdOrder = await writeClient.createIfNotExists({
+            ...orderDocument,
+            inventoryAdjusted: false,
+            inventoryIssue,
+          });
+          await reportPaymentFailure(
+            "payment.cart_reconciliation.required",
+            { orderId, reference },
+            error,
+          );
+          return { orderId: createdOrder._id, duplicate: false };
+        }
+        continue;
+      }
     }
 
     try {
-      const transactionBuilder = productIds.reduce(
+      let transactionBuilder = productIds.reduce(
         (transactionBuilder, productId, index) => {
           const product = productById.get(productId)!;
           return transactionBuilder.patch(productId, (patch) =>
@@ -262,8 +368,18 @@ export async function fulfillPaystackTransaction(
         writeClient.transaction().create({
           ...orderDocument,
           inventoryAdjusted: true,
+          cartClearedAt,
         }),
       );
+      if (savedCart) {
+        transactionBuilder = transactionBuilder.patch(
+          savedCart._id,
+          (patch) =>
+            patch
+              .ifRevisionId(savedCart._rev)
+              .set({ items: remainingCartItems, updatedAt: cartClearedAt }),
+        );
+      }
       const commitResult = await transactionBuilder.commit();
       return {
         orderId: commitResult.results[0]?.id ?? orderId,
@@ -279,17 +395,48 @@ export async function fulfillPaystackTransaction(
         return { orderId: duplicate._id, duplicate: true };
       }
       if (attempt === MAX_INVENTORY_ATTEMPTS - 1) {
-        const createdOrder = await writeClient.createIfNotExists({
-          ...orderDocument,
-          inventoryAdjusted: false,
-          inventoryIssue: "Inventory changed repeatedly while recording payment",
-        });
+        const inventoryIssue =
+          "Inventory changed repeatedly while recording payment";
+        let createdOrderId = orderId;
+        try {
+          const cartClearedAt = new Date().toISOString();
+          let recoveryTransaction = writeClient
+            .transaction()
+            .createIfNotExists({
+              ...orderDocument,
+              inventoryAdjusted: false,
+              inventoryIssue,
+              cartClearedAt,
+            });
+          if (savedCart) {
+            recoveryTransaction = recoveryTransaction.patch(
+              savedCart._id,
+              (patch) =>
+                patch
+                  .ifRevisionId(savedCart._rev)
+                  .set({ items: remainingCartItems, updatedAt: cartClearedAt }),
+            );
+          }
+          await recoveryTransaction.commit();
+        } catch (cartError) {
+          const createdOrder = await writeClient.createIfNotExists({
+            ...orderDocument,
+            inventoryAdjusted: false,
+            inventoryIssue,
+          });
+          createdOrderId = createdOrder._id;
+          await reportPaymentFailure(
+            "payment.cart_reconciliation.required",
+            { orderId, reference },
+            cartError,
+          );
+        }
         logPaymentEvent("error", "payment.inventory_reconciliation.required", {
           orderId,
           reference,
           inventoryIssue: "concurrent inventory changes",
         }, error);
-        return { orderId: createdOrder._id, duplicate: false };
+        return { orderId: createdOrderId, duplicate: false };
       }
     }
   }

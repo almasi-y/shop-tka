@@ -213,6 +213,15 @@ export const orderType = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: "cartClearedAt",
+      title: "Purchased cart cleared at",
+      type: "datetime",
+      group: "payment",
+      readOnly: true,
+      description:
+        "Set atomically when purchased items are removed from the customer's saved cart.",
+    }),
+    defineField({
       name: "fulfillmentStatus",
       title: "Fulfillment status",
       type: "string",

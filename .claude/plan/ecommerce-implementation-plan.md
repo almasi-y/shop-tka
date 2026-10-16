@@ -419,7 +419,8 @@ Add cart provider to layout, cart icon in header with item count
 
 - Verify the returned reference through the authenticated server endpoint
 - Display order confirmation only after the Sanity order exists
-- Clear the cart only after confirmed order creation
+- Clear the live browser cart only after confirmed order creation, including
+  any stale guest-cart copy left in local storage
 - Link to orders page
 
 ---
@@ -437,6 +438,12 @@ Handle the `charge.success` event:
 - Validate successful status, KES currency, paid amount, ownership, items,
   price snapshots, shipping fee, and shipping address
 - Create the Sanity order and adjust inventory atomically where possible
+- Remove the purchased quantities from the signed-in customer's persisted
+  Sanity cart in the same transaction that creates the paid order and adjusts
+  inventory. This prevents purchased items from returning after refresh or a
+  later sign-in. Preserve any quantity above what was purchased.
+- Record `cartClearedAt` on the order as an audit marker for the atomic cart
+  cleanup
 - Use a deterministic order ID/reference check so duplicate webhook delivery
   cannot create a duplicate order or deduct inventory twice
 - Include: user ID, products, quantities, price snapshots, address, shipping,

@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import { useAuth } from "@clerk/nextjs";
@@ -304,10 +305,14 @@ export const useCartActions = () => {
   const addItem = useCartStore((state) => state.addItem);
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const clearCart = useCartStore((state) => state.clearCart);
+  const clearStoreCart = useCartStore((state) => state.clearCart);
   const toggleCart = useCartStore((state) => state.toggleCart);
   const openCart = useCartStore((state) => state.openCart);
   const closeCart = useCartStore((state) => state.closeCart);
+  const clearCart = useCallback(() => {
+    clearStoreCart();
+    window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+  }, [clearStoreCart]);
 
   return {
     addItem,

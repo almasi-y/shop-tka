@@ -232,6 +232,7 @@ export type Order = {
   productPrices?: Array<number>;
   status?: "paid" | "shipped" | "delivered" | "cancelled";
   paymentStatus?: "paid" | "partially_refunded" | "refunded";
+  cartClearedAt?: string;
   fulfillmentStatus?:
     | "processing"
     | "packed"

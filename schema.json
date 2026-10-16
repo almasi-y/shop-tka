@@ -1387,6 +1387,13 @@
         },
         "optional": true
       },
+      "cartClearedAt": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "string"
+        },
+        "optional": true
+      },
       "fulfillmentStatus": {
         "type": "objectAttribute",
         "value": {
