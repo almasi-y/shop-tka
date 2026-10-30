@@ -140,7 +140,7 @@ export async function CatalogPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="w-full px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
         <ProductSection
           categories={categories}
           brands={allBrands}

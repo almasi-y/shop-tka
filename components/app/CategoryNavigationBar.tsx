@@ -26,7 +26,7 @@ export async function CategoryNavigationBar() {
     <div className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
       <nav
         aria-label="Store categories"
-        className="mx-auto flex min-h-11 max-w-7xl items-center overflow-x-auto px-4 sm:px-6 lg:px-8"
+        className="flex min-h-11 w-full items-center overflow-x-auto px-4 sm:px-6 lg:px-8"
       >
         <Link
           href="/"

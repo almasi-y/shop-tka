@@ -48,7 +48,7 @@ export function Footer({ categories, brands }: FooterProps) {
     <footer className="relative mt-auto w-full rounded-t-4xl border-t bg-zinc-50 dark:bg-zinc-900 md:rounded-t-[3rem]">
       <div className="absolute top-0 right-1/2 left-1/2 h-px w-1/3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-periwinkle/70" />
 
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:px-8 lg:py-16 xl:grid-cols-3 xl:gap-8">
+      <div className="grid w-full gap-8 px-4 py-12 sm:px-6 lg:px-8 lg:py-16 xl:grid-cols-3 xl:gap-8">
         <AnimatedContainer className="space-y-4">
           <Link
             href="/"

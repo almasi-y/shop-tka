@@ -15,6 +15,17 @@
 export declare const internalGroqTypeReferenceTo: unique symbol;
 
 // Source: schema.json
+export type NotificationState = {
+  _id: string;
+  _type: "notificationState";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  clerkUserId?: string;
+  readKeys?: Array<string>;
+  updatedAt?: string;
+};
+
 export type TrackingEvent = {
   _type: "trackingEvent";
   status?:
@@ -601,6 +612,7 @@ export type Geopoint = {
 };
 
 export type AllSanitySchemaTypes =
+  | NotificationState
   | TrackingEvent
   | ProductReference
   | ShoppingCart
@@ -752,6 +764,59 @@ export type CUSTOMER_ADDRESS_BY_USER_QUERY_RESULT = {
     county: string | null;
     country: string | null;
   } | null;
+} | null;
+
+// Source: lib/sanity/queries/notifications.ts
+// Variable: NOTIFICATION_FEED_QUERY
+// Query: {  "orders": *[    _type == "order"    && clerkUserId == $clerkUserId    && !(_id in path("drafts.**"))  ] {    _id,    orderNumber,    trackingEvents[defined(_key) && defined(occurredAt) && defined(publicMessage)] {      _key,      status,      occurredAt,      publicMessage    }  },  "returns": *[    _type == "returnRequest"    && clerkUserId == $clerkUserId    && !(_id in path("drafts.**"))  ] {    _id,    requestNumber,    status,    requestedAt,    reviewedAt,    completedAt,    _updatedAt  },  "restocks": *[    _type == "restockSubscription"    && clerkUserId == $clerkUserId    && status == "notified"    && !(_id in path("drafts.**"))  ] {    _id,    notifiedAt,    _updatedAt,    "productName": coalesce(product->title, product->name),    "productSlug": product->slug.current  },  "state": *[    _type == "notificationState"    && clerkUserId == $clerkUserId  ] | order(updatedAt desc)[0] {    _id,    readKeys  }}
+export type NOTIFICATION_FEED_QUERY_RESULT = {
+  orders: Array<{
+    _id: string;
+    orderNumber: string | null;
+    trackingEvents: Array<{
+      _key: string;
+      status:
+        | "cancelled"
+        | "delivered"
+        | "dispatched"
+        | "out_for_delivery"
+        | "packed"
+        | "payment_confirmed"
+        | "processing"
+        | null;
+      occurredAt: string | null;
+      publicMessage: string | null;
+    }> | null;
+  }>;
+  returns: Array<{
+    _id: string;
+    requestNumber: string | null;
+    status:
+      "approved" | "completed" | "pending" | "received" | "rejected" | null;
+    requestedAt: string | null;
+    reviewedAt: string | null;
+    completedAt: string | null;
+    _updatedAt: string;
+  }>;
+  restocks: Array<{
+    _id: string;
+    notifiedAt: string | null;
+    _updatedAt: string;
+    productName: string | null;
+    productSlug: string | null;
+  }>;
+  state: {
+    _id: string;
+    readKeys: Array<string> | null;
+  } | null;
+};
+
+// Source: lib/sanity/queries/notifications.ts
+// Variable: NOTIFICATION_STATE_BY_USER_QUERY
+// Query: *[  _type == "notificationState"  && clerkUserId == $clerkUserId] | order(updatedAt desc)[0] {  _id,  readKeys}
+export type NOTIFICATION_STATE_BY_USER_QUERY_RESULT = {
+  _id: string;
+  readKeys: Array<string> | null;
 } | null;
 
 // Source: lib/sanity/queries/orders.ts
@@ -1570,6 +1635,8 @@ declare module "@sanity/client" {
     '*[\n  _type == "category"\n] | order(coalesce(displayOrder, 2147483647) asc, title asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  "parentId": parentCategory._ref,\n  displayOrder,\n  "image": image{\n    asset->{\n      _id,\n      url\n    },\n    hotspot\n  }\n}': ALL_CATEGORIES_QUERY_RESULT;
     '*[\n  _type == "category"\n  && slug.current == $slug\n][0] {\n  _id,\n  title,\n  "slug": slug.current,\n  "parentId": parentCategory._ref,\n  displayOrder,\n  "image": image{\n    asset->{\n      _id,\n      url\n    },\n    hotspot\n  }\n}': CATEGORY_BY_SLUG_QUERY_RESULT;
     '*[\n  _type == "customer"\n  && clerkUserId == $clerkUserId\n] | order(createdAt desc)[0] {\n  _id,\n  email,\n  name,\n  shippingAddress {\n    name,\n    line1,\n    line2,\n    city,\n    postcode,\n    county,\n    country\n  }\n}': CUSTOMER_ADDRESS_BY_USER_QUERY_RESULT;
+    '{\n  "orders": *[\n    _type == "order"\n    && clerkUserId == $clerkUserId\n    && !(_id in path("drafts.**"))\n  ] {\n    _id,\n    orderNumber,\n    trackingEvents[defined(_key) && defined(occurredAt) && defined(publicMessage)] {\n      _key,\n      status,\n      occurredAt,\n      publicMessage\n    }\n  },\n  "returns": *[\n    _type == "returnRequest"\n    && clerkUserId == $clerkUserId\n    && !(_id in path("drafts.**"))\n  ] {\n    _id,\n    requestNumber,\n    status,\n    requestedAt,\n    reviewedAt,\n    completedAt,\n    _updatedAt\n  },\n  "restocks": *[\n    _type == "restockSubscription"\n    && clerkUserId == $clerkUserId\n    && status == "notified"\n    && !(_id in path("drafts.**"))\n  ] {\n    _id,\n    notifiedAt,\n    _updatedAt,\n    "productName": coalesce(product->title, product->name),\n    "productSlug": product->slug.current\n  },\n  "state": *[\n    _type == "notificationState"\n    && clerkUserId == $clerkUserId\n  ] | order(updatedAt desc)[0] {\n    _id,\n    readKeys\n  }\n}': NOTIFICATION_FEED_QUERY_RESULT;
+    '*[\n  _type == "notificationState"\n  && clerkUserId == $clerkUserId\n] | order(updatedAt desc)[0] {\n  _id,\n  readKeys\n}': NOTIFICATION_STATE_BY_USER_QUERY_RESULT;
     '*[\n  _type == "order"\n  && clerkUserId == $clerkUserId\n] | order(createdAt desc) {\n  _id,\n  orderNumber,\n  "total": coalesce(totalPrice, total),\n  status,\n  fulfillmentStatus,\n  createdAt,\n  "itemCount": select(defined(products) => count(products), count(items)),\n  "itemNames": select(\n    defined(products) => products[]->{"value": coalesce(title, name)}.value,\n    coalesce(items[].product->title, items[].product->name)\n  ),\n  "itemImages": select(\n    defined(products) => products[]->images[0].asset->url,\n    items[].product->images[0].asset->url\n  )\n}': ORDERS_BY_USER_QUERY_RESULT;
     '*[\n  _type == "order"\n  && _id == $id\n  && clerkUserId == $clerkUserId\n][0] {\n  _id,\n  orderNumber,\n  clerkUserId,\n  "email": coalesce(customerEmail, email),\n  products[]->{\n    _id,\n    "name": coalesce(title, name),\n    "slug": slug.current,\n    "image": images[0]{\n      asset->{\n        _id,\n        url\n      }\n    }\n  },\n  quantities,\n  productPrices,\n  subtotal,\n  shippingFee,\n  "legacyItems": items[]{\n    _key,\n    quantity,\n    priceAtPurchase,\n    product->{\n      _id,\n      "name": coalesce(title, name),\n      "slug": slug.current,\n      "image": images[0]{\n        asset->{\n          _id,\n          url\n        }\n      }\n    }\n  },\n  "total": coalesce(totalPrice, total),\n  status,\n  "paymentStatus": coalesce(paymentStatus, "paid"),\n  fulfillmentStatus,\n  trackingNumber,\n  courierName,\n  courierTrackingNumber,\n  courierTrackingUrl,\n  estimatedDeliveryAt,\n  currentLocation,\n  "trackingEvents": trackingEvents[defined(publicMessage)]{\n    _key,\n    status,\n    occurredAt,\n    publicMessage,\n    location\n  },\n  "address": coalesce(shippingAddress, address),\n  paystackReference,\n  createdAt\n}': ORDER_BY_ID_QUERY_RESULT;
     '*[\n  _type == "order"\n] | order(createdAt desc) [0...$limit] {\n  _id,\n  orderNumber,\n  "email": coalesce(customerEmail, email),\n  "total": coalesce(totalPrice, total),\n  status,\n  createdAt\n}': RECENT_ORDERS_QUERY_RESULT;

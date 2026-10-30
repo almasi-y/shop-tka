@@ -11,6 +11,7 @@ import { shippingSettingsType } from './shippingSettingsType'
 import { returnRequestType } from './returnRequestType'
 import { shoppingCartType } from './shoppingCartType'
 import { trackingEventType } from './trackingEventType'
+import { notificationStateType } from './notificationStateType'
 
   
 export const schema: { types: SchemaTypeDefinition[] } = {
@@ -27,5 +28,6 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     returnRequestType,
     shoppingCartType,
     trackingEventType,
+    notificationStateType,
   ],
 }

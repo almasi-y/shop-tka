@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { useCartActions, useTotalItems } from "@/lib/store/cart-store-provider";
 import { useChatActions } from "@/lib/store/chat-store-provider";
 import { WISHLIST_UPDATED_EVENT } from "@/lib/wishlist/events";
+import { NotificationCenter } from "@/components/app/NotificationCenter";
 import {
   clearGuestWishlist,
   getGuestWishlist,
@@ -271,7 +272,7 @@ export function Header() {
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="bg-brand-blue text-white">
-        <div className="mx-auto flex min-h-9 max-w-7xl items-center justify-end gap-4 px-4 py-1.5 text-xs sm:justify-between sm:px-6 lg:px-8">
+        <div className="flex min-h-9 w-full items-center justify-end gap-4 px-4 py-1.5 text-xs sm:justify-between sm:px-6 lg:px-8">
           <p className="hidden font-medium tracking-wide text-white/90 sm:block">
             Your one-stop shop for STEM, robotics, automation and turnkey projects.
           </p>
@@ -305,7 +306,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 px-4 py-3 sm:px-6 md:grid-cols-[auto_minmax(16rem,1fr)_auto] md:gap-6 lg:px-8">
+      <div className="grid w-full grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 px-4 py-3 sm:px-6 md:grid-cols-[auto_minmax(16rem,1fr)_auto] md:gap-6 lg:px-8">
         <Link href="/" aria-label="Code Innovators Shop home" className="shrink-0">
           <Image
             src="/branding/logo.svg"
@@ -334,6 +335,7 @@ export function Header() {
               <MessageCircle className="size-5" />
             </Button>
           )}
+          {isSignedIn ? <NotificationCenter /> : null}
           <WishlistControl />
           <Button
             variant="ghost"

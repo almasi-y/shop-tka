@@ -97,7 +97,17 @@ then exercise the complete payment flow described below.
 
 Sanity owns products, category trees, brands, promotions, customers, carts,
 wishlists, restock subscriptions, shipping settings, orders, tracking events,
-and return requests.
+return requests, and notification read state.
+
+## In-site customer notifications
+
+Signed-in customers have a notification bell in the storefront header. The
+feed is derived from canonical order tracking events, return statuses, and
+completed restock subscriptions rather than duplicating those business events.
+Only per-customer read keys are stored in the `notificationState` Sanity
+document. The authenticated `/api/notifications` route returns the feed and
+marks individual or visible notifications as read. Transactional email remains
+optional and is not required for these in-site updates to work.
 
 The catalog seed is idempotent: it looks up categories and brands by slug and
 allows Sanity to assign document IDs.
@@ -141,7 +151,10 @@ production data before a material migration.
 6. Fulfillment uses a deterministic order ID based on the Paystack reference.
    Webhook retries, page refreshes, and concurrent delivery therefore create
    one order and adjust inventory at most once.
-7. The customer cart is cleared only after the order is confirmed in Sanity.
+7. Fulfillment removes the purchased quantities from the signed-in customer's
+   persisted Sanity cart in the same transaction that creates the order and
+   adjusts inventory. After confirmation, the success page also clears the
+   live browser cart and any stale guest-cart copy.
 
 Before initializing Paystack, checkout performs a Sanity dry-run mutation.
 This proves that the deployed write token can create an order without changing

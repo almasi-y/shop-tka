@@ -37,7 +37,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             alt={productName ?? "Product image"}
             fill
             className="object-contain"
-            sizes="(max-width: 640px) 56vw, (max-width: 1024px) 50vw, 480px"
+            sizes="(max-width: 1024px) 100vw, 42vw"
             loading="eager"
           />
         ) : (

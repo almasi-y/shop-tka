@@ -1,6 +1,6 @@
 # E-Commerce AI App Implementation Plan — Code Innovators Shop (v2)
 
-**Last materially updated:** 13 October 2026
+**Last materially updated:** 30 October 2026
 
 **Overview:** Build a complete AI-powered e-commerce platform using Next.js 16,
 Clerk authentication, Sanity for products/categories/brands/orders, Paystack
@@ -86,6 +86,45 @@ Minimum payment regression checks:
     them through the same idempotent fulfillment routine.
 14. Payment failures emit structured event codes suitable for Vercel log
     alerts and may also be delivered to the configured sanitized alert webhook.
+
+## Current Outstanding Work — 30 October 2026
+
+1. **Production payment release verification:** after the persisted-cart fix
+   is deployed, require a successful production readiness check, a Paystack
+   webhook `200` response, one low-value end-to-end payment, order visibility
+   for both customer and admin, and an empty cart after refresh and a new
+   sign-in. Repeat a duplicate-delivery and webhook-unavailable recovery test.
+2. **Production operations configuration:** confirm current Production values
+   for `SANITY_API_WRITE_TOKEN`, `PAYMENT_OPERATIONS_SECRET`, `CRON_SECRET`,
+   and `NEXT_PUBLIC_BASE_URL`; optionally configure
+   `PAYMENT_ALERT_WEBHOOK_URL` with the private Discord payment-alert channel,
+   then redeploy and confirm the daily reconciliation cron returns `200`.
+3. **Transactional email delivery:** payment confirmation, dispatch, delivery,
+   return-status, and restock emails are not implemented yet. The signed-in
+   storefront now provides a persistent notification bell derived from order
+   tracking events, return statuses, and completed restock subscriptions, with
+   per-account read state. No email provider or durable outbound email workflow
+   has been connected.
+4. **AI assistant:** intentionally on hold until Vercel AI Gateway credits and
+   an available Anthropic model are configured.
+5. **Deferred storefront work:** product reviews remain postponed. About,
+   FAQ, privacy, terms, and contact pages remain intentionally deferred until
+   the final content/legal pass.
+6. **Catalog content:** finish adding the remaining category/subcategory tree
+   and production catalog content in Sanity; this is content work rather than
+   missing storefront architecture.
+
+Approved returns continue to require an admin decision. Automatic Paystack
+refunds are intentionally not implemented; this is a business rule, not an
+untracked omission.
+
+### Storefront width decision — 30 October 2026
+
+Broad customer-facing surfaces use the full viewport with consistent gutters:
+16px on mobile, 24px on tablet, and 32px on desktop. Header, category
+navigation, catalog, product detail, wishlist, loading states, and footer no
+longer use the previous 1280px/1152px maximum-width caps. Checkout, account,
+order, and return forms retain narrower internal widths for readability.
 
 ---
 
