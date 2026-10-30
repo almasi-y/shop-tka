@@ -42,7 +42,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               alt={product.name ?? "Product image"}
               fill
               className="object-contain p-3 sm:p-4"
-              sizes="(max-width: 1023px) 50vw, 25vw"
+              sizes="(max-width: 1023px) 50vw, (max-width: 1535px) 25vw, 20vw"
               loading={eager ? "eager" : "lazy"}
             />
           ) : (
