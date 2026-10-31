@@ -26,6 +26,7 @@ contains a custom Sanity-powered admin dashboard and the embedded Sanity Studio.
 - Clerk application
 - Sanity project and dataset
 - Paystack account
+- Resend account with a verified sending domain
 - Vercel AI Gateway credentials and credits only when the AI assistant is
   enabled
 
@@ -69,6 +70,8 @@ The storefront is available at `http://localhost:3000`. Never commit
 | `PAYMENT_OPERATIONS_SECRET` | Server only | Protects readiness and manual reconciliation endpoints; use a random 32+ character Production Secret |
 | `CRON_SECRET` | Server only | Authenticates Vercel Cron; use a different random 32+ character Production Secret |
 | `PAYMENT_ALERT_WEBHOOK_URL` | Server only | Optional HTTPS destination for sanitized payment failure alerts |
+| `RESEND_API_KEY` | Server only | Resend API key used for customer transactional emails |
+| `EMAIL_FROM` | Server only | Verified no-reply sender, for example `Code Innovators Shop <no-reply@shop.codeinnovatorsafrica.com>` |
 | `AI_GATEWAY_API_KEY` | Server only | Local Vercel AI Gateway access |
 | `NEXT_PUBLIC_AI_ASSISTANT_ENABLED` | Public | Feature switch; keep `false` until Gateway credits/model access are ready |
 
@@ -99,15 +102,30 @@ Sanity owns products, category trees, brands, promotions, customers, carts,
 wishlists, restock subscriptions, shipping settings, orders, tracking events,
 return requests, and notification read state.
 
-## In-site customer notifications
+## Customer notifications and transactional email
 
 Signed-in customers have a notification bell in the storefront header. The
 feed is derived from canonical order tracking events, return statuses, and
 completed restock subscriptions rather than duplicating those business events.
 Only per-customer read keys are stored in the `notificationState` Sanity
 document. The authenticated `/api/notifications` route returns the feed and
-marks individual or visible notifications as read. Transactional email remains
-optional and is not required for these in-site updates to work.
+marks individual or visible notifications as read.
+
+Resend sends no-reply emails for payment confirmation, admin-published order
+tracking updates, return-status changes, and product restocks. Every business
+event first claims a deterministic `emailDelivery` ledger record in Sanity and
+also uses a Resend idempotency key. Webhook retries, page refreshes, and the
+backup job therefore do not intentionally send the same event twice. A daily
+Vercel Cron retry is scheduled for the 01:00 UTC hour and revisits recent events
+that were not recorded as sent. On Vercel Hobby, daily cron timing has hourly
+precision, so it may run at any point from 04:00–04:59 East Africa Time.
+
+The email path is deliberately outside Paystack order mutations. Missing email
+configuration, Resend outages, and email-ledger failures are logged but never
+change a successful fulfillment result, prevent order creation, or keep paid
+items in the cart. `no-reply@shop.codeinnovatorsafrica.com` is a send-only
+identity; it does not need a purchased mailbox or MX record. Customer support
+is directed to the shop WhatsApp number instead.
 
 The catalog seed is idempotent: it looks up categories and brands by slug and
 allows Sanity to assign document IDs.
@@ -155,6 +173,9 @@ production data before a material migration.
    persisted Sanity cart in the same transaction that creates the order and
    adjusts inventory. After confirmation, the success page also clears the
    live browser cart and any stale guest-cart copy.
+8. After fulfillment has already succeeded, a non-blocking task sends the
+   payment-confirmation email. Email delivery cannot roll back or fail the paid
+   order.
 
 Before initializing Paystack, checkout performs a Sanity dry-run mutation.
 This proves that the deployed write token can create an order without changing

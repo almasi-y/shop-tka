@@ -399,7 +399,22 @@ function ProductDetailContent({ handle }: { handle: DocumentHandle }) {
             <RevertButton {...handle} />
           </Suspense>
           <Suspense fallback={null}>
-            <PublishButton {...handle} />
+            <PublishButton
+              {...handle}
+              onPublished={async (documentId) => {
+                const response = await fetch("/api/admin/customer-emails", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    eventType: "restock",
+                    documentId,
+                  }),
+                });
+                if (!response.ok) {
+                  throw new Error("Unable to queue restock notifications");
+                }
+              }}
+            />
           </Suspense>
         </div>
       </div>

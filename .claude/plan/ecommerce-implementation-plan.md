@@ -99,12 +99,12 @@ Minimum payment regression checks:
    and `NEXT_PUBLIC_BASE_URL`; optionally configure
    `PAYMENT_ALERT_WEBHOOK_URL` with the private Discord payment-alert channel,
    then redeploy and confirm the daily reconciliation cron returns `200`.
-3. **Transactional email delivery:** payment confirmation, dispatch, delivery,
-   return-status, and restock emails are not implemented yet. The signed-in
-   storefront now provides a persistent notification bell derived from order
-   tracking events, return statuses, and completed restock subscriptions, with
-   per-account read state. No email provider or durable outbound email workflow
-   has been connected.
+3. **Transactional email production verification:** Resend delivery is now
+   implemented for payment confirmation, admin-published tracking updates,
+   return statuses, and restocks. Verify the Production `RESEND_API_KEY` and
+   `EMAIL_FROM`, deploy, then prove one delivery of each event type. The Sanity
+   `emailDelivery` ledger and Resend idempotency keys prevent intentional
+   duplicates, while email failures remain isolated from Paystack fulfillment.
 4. **AI assistant:** intentionally on hold until Vercel AI Gateway credits and
    an available Anthropic model are configured.
 5. **Deferred storefront work:** product reviews remain postponed. About,
@@ -125,6 +125,8 @@ Broad customer-facing surfaces use the full viewport with consistent gutters:
 navigation, catalog, product detail, wishlist, loading states, and footer no
 longer use the previous 1280px/1152px maximum-width caps. Checkout, account,
 order, and return forms retain narrower internal widths for readability.
+Product grids remain two columns on mobile and four on ordinary desktop widths,
+increasing to five columns at 1536px and wider so cards do not become cramped.
 
 ---
 
@@ -650,6 +652,30 @@ Define tools for:
   confirm the Sanity project and dataset variables match, redeploy, verify the
   live webhook returns `200`, and perform a low-value end-to-end test proving
   both webhook fulfillment and callback recovery create a visible order.
+
+### 9.6 Transactional Email Delivery — 30 October 2026
+
+- Resend is connected directly on its free plan using the verified
+  `shop.codeinnovatorsafrica.com` sending domain and the send-only identity
+  `Code Innovators Shop <no-reply@shop.codeinnovatorsafrica.com>`.
+- Payment confirmation, admin-published order tracking, return-status, and
+  restock events generate customer emails. The existing signed-in notification
+  feed remains available independently of email.
+- Each business event claims a deterministic Sanity `emailDelivery` ledger
+  record and uses the same stable event identity as a Resend idempotency key.
+  Concurrent handlers and scheduled retries therefore converge on one send.
+- Payment fulfillment schedules its email only after the order result exists.
+  Missing configuration, provider failures, or ledger failures are logged and
+  must never change a successful payment result, roll back an order, prevent
+  cart cleanup, or produce an endless confirmation screen.
+- `/api/cron/send-customer-emails` is scheduled daily in the 01:00 UTC hour as
+  a bounded retry for recent events. Vercel Hobby may invoke it at any point
+  from 04:00–04:59 East Africa Time because Hobby cron timing has hourly
+  precision. It is protected by Vercel's `CRON_SECRET` authorization in the
+  same way as payment reconciliation.
+- No mailbox or MX record is required for the no-reply sender. Customer support
+  remains available through WhatsApp; replies to transactional messages are not
+  monitored.
 
 ---
 

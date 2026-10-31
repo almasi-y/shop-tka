@@ -211,6 +211,7 @@ function OrderDetailContent({ handle }: { handle: DocumentHandle }) {
       <OrderTrackingManager
         key={`${data.fulfillmentStatus}-${data.trackingEvents?.at(-1)?._key ?? "none"}`}
         handle={handle}
+        orderId={handle.documentId.replace(/^drafts\./, "")}
         tracking={tracking}
       />
 

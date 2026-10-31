@@ -20,11 +20,13 @@ import {
 interface PublishButtonProps extends DocumentHandle {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
+  onPublished?: (documentId: string) => void | Promise<void>;
 }
 
 function PublishButtonContent({
   variant = "default",
   size = "default",
+  onPublished,
   ...handle
 }: PublishButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
@@ -48,6 +50,11 @@ function PublishButtonContent({
           documentType: handle.documentType,
         }),
       );
+      try {
+        await onPublished?.(baseId);
+      } catch (callbackError) {
+        console.error("Post-publish action failed", callbackError);
+      }
       setJustPublished(true);
       setTimeout(() => setJustPublished(false), 2000);
     } catch (error) {

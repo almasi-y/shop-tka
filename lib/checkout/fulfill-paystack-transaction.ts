@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { after } from "next/server";
 import { writeClient } from "@/sanity/lib/client";
 import { ORDER_BY_PAYSTACK_REFERENCE_QUERY } from "@/lib/sanity/queries/orders";
 import { shippingAddressSchema } from "@/lib/checkout/shipping-address";
@@ -10,6 +11,7 @@ import {
   logPaymentEvent,
   reportPaymentFailure,
 } from "@/lib/payments/observability";
+import { sendPaymentConfirmationEmail } from "@/lib/email/customer-notifications";
 
 export type PaystackTransaction = {
   id?: number;
@@ -65,6 +67,28 @@ type FulfillmentResult = {
 };
 
 const MAX_INVENTORY_ATTEMPTS = 3;
+
+function completeFulfillment(result: FulfillmentResult) {
+  try {
+    after(async () => {
+      try {
+        await sendPaymentConfirmationEmail(result.orderId);
+      } catch (error) {
+        console.error("Unable to send payment confirmation email", {
+          orderId: result.orderId,
+          error,
+        });
+      }
+    });
+  } catch (error) {
+    // Email scheduling must never change a successful payment result.
+    console.error("Unable to schedule payment confirmation email", {
+      orderId: result.orderId,
+      error,
+    });
+  }
+  return result;
+}
 
 const SAVED_CART_FOR_FULFILLMENT_QUERY = `*[
   _type == "shoppingCart"
@@ -179,7 +203,10 @@ export async function fulfillPaystackTransaction(
   );
 
   if (existingOrder) {
-    return { orderId: existingOrder._id, duplicate: true };
+    return completeFulfillment({
+      orderId: existingOrder._id,
+      duplicate: true,
+    });
   }
 
   const subtotal = quantities.reduce(
@@ -329,14 +356,17 @@ export async function fulfillPaystackTransaction(
           reference,
           inventoryIssue,
         });
-        return { orderId, duplicate: false };
+        return completeFulfillment({ orderId, duplicate: false });
       } catch (error) {
         const duplicate = await writeClient.fetch(
           ORDER_BY_PAYSTACK_REFERENCE_QUERY,
           { paystackReference: reference },
         );
         if (duplicate) {
-          return { orderId: duplicate._id, duplicate: true };
+          return completeFulfillment({
+            orderId: duplicate._id,
+            duplicate: true,
+          });
         }
         if (attempt === MAX_INVENTORY_ATTEMPTS - 1) {
           const createdOrder = await writeClient.createIfNotExists({
@@ -349,7 +379,10 @@ export async function fulfillPaystackTransaction(
             { orderId, reference },
             error,
           );
-          return { orderId: createdOrder._id, duplicate: false };
+          return completeFulfillment({
+            orderId: createdOrder._id,
+            duplicate: false,
+          });
         }
         continue;
       }
@@ -381,10 +414,10 @@ export async function fulfillPaystackTransaction(
         );
       }
       const commitResult = await transactionBuilder.commit();
-      return {
+      return completeFulfillment({
         orderId: commitResult.results[0]?.id ?? orderId,
         duplicate: false,
-      };
+      });
     } catch (error) {
       // The deterministic document ID closes concurrent webhook/retry races.
       const duplicate = await writeClient.fetch(
@@ -392,7 +425,10 @@ export async function fulfillPaystackTransaction(
         { paystackReference: reference },
       );
       if (duplicate) {
-        return { orderId: duplicate._id, duplicate: true };
+        return completeFulfillment({
+          orderId: duplicate._id,
+          duplicate: true,
+        });
       }
       if (attempt === MAX_INVENTORY_ATTEMPTS - 1) {
         const inventoryIssue =
@@ -436,10 +472,13 @@ export async function fulfillPaystackTransaction(
           reference,
           inventoryIssue: "concurrent inventory changes",
         }, error);
-        return { orderId: createdOrderId, duplicate: false };
+        return completeFulfillment({
+          orderId: createdOrderId,
+          duplicate: false,
+        });
       }
     }
   }
 
-  return { orderId, duplicate: false };
+  return completeFulfillment({ orderId, duplicate: false });
 }

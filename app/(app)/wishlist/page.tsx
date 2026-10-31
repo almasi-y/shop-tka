@@ -47,7 +47,7 @@ export default async function WishlistPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4 2xl:grid-cols-5">
         {items.map((item) => (
           <div key={item._id} className="relative min-w-0">
             <WishlistRemoveButton productId={item.product._id} />

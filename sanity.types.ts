@@ -15,6 +15,26 @@
 export declare const internalGroqTypeReferenceTo: unique symbol;
 
 // Source: schema.json
+export type EmailDelivery = {
+  _id: string;
+  _type: "emailDelivery";
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+  eventKey?: string;
+  kind?: "payment_confirmation" | "order_update" | "return_update" | "restock";
+  recipient?: string;
+  sourceDocumentId?: string;
+  status?: "pending" | "sending" | "sent" | "failed";
+  attemptId?: string;
+  attempts?: number;
+  providerMessageId?: string;
+  lastError?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  sentAt?: string;
+};
+
 export type NotificationState = {
   _id: string;
   _type: "notificationState";
@@ -612,6 +632,7 @@ export type Geopoint = {
 };
 
 export type AllSanitySchemaTypes =
+  | EmailDelivery
   | NotificationState
   | TrackingEvent
   | ProductReference
@@ -651,6 +672,93 @@ export type AllSanitySchemaTypes =
   | SanityAssetSourceData
   | SanityImageAsset
   | Geopoint;
+
+// Source: lib/email/customer-notifications.ts
+// Variable: ORDER_EMAIL_QUERY
+// Query: *[  _type == "order" && _id == $orderId && !(_id in path("drafts.**"))][0]{  _id,  orderNumber,  "customerEmail": coalesce(customerEmail, email),  "total": coalesce(totalPrice, total),  trackingNumber,  courierName,  courierTrackingNumber,  courierTrackingUrl,  currentLocation,  trackingEvents[]{_key, status, occurredAt, publicMessage, location}}
+export type ORDER_EMAIL_QUERY_RESULT = {
+  _id: string;
+  orderNumber: string | null;
+  customerEmail: string | null;
+  total: number | null;
+  trackingNumber: string | null;
+  courierName: string | null;
+  courierTrackingNumber: string | null;
+  courierTrackingUrl: string | null;
+  currentLocation: string | null;
+  trackingEvents: Array<{
+    _key: string;
+    status:
+      | "cancelled"
+      | "delivered"
+      | "dispatched"
+      | "out_for_delivery"
+      | "packed"
+      | "payment_confirmed"
+      | "processing"
+      | null;
+    occurredAt: string | null;
+    publicMessage: string | null;
+    location: string | null;
+  }> | null;
+} | null;
+
+// Source: lib/email/customer-notifications.ts
+// Variable: RETURN_EMAIL_QUERY
+// Query: *[  _type == "returnRequest" && _id == $requestId && !(_id in path("drafts.**"))][0]{  _id,  requestNumber,  customerEmail,  status,  adminNotes,  reviewedAt,  completedAt,  _updatedAt}
+export type RETURN_EMAIL_QUERY_RESULT = {
+  _id: string;
+  requestNumber: string | null;
+  customerEmail: string | null;
+  status: "approved" | "completed" | "pending" | "received" | "rejected" | null;
+  adminNotes: string | null;
+  reviewedAt: string | null;
+  completedAt: string | null;
+  _updatedAt: string;
+} | null;
+
+// Source: lib/email/customer-notifications.ts
+// Variable: RESTOCK_SUBSCRIPTIONS_QUERY
+// Query: *[  _type == "restockSubscription"  && status == "pending"  && product._ref == $productId  && !(_id in path("drafts.**"))]{  _id,  email,  product->{    _id,    "name": coalesce(title, name),    "slug": slug.current,    "stock": coalesce(stock, 0)  }}
+export type RESTOCK_SUBSCRIPTIONS_QUERY_RESULT = Array<{
+  _id: string;
+  email: string | null;
+  product: {
+    _id: string;
+    name: string | null;
+    slug: string | null;
+    stock: number | 0;
+  } | null;
+}>;
+
+// Source: lib/email/customer-notifications.ts
+// Variable: retryCandidatesQuery
+// Query: {    "orders": *[      _type == "order"      && createdAt >= $since      && !(_id in path("drafts.**"))    ] | order(createdAt desc)[0...25]{      _id,      "trackingEvents": trackingEvents[source == "admin" && defined(_key)]{_key}    },    "returns": *[      _type == "returnRequest"      && _updatedAt >= $since      && !(_id in path("drafts.**"))    ] | order(_updatedAt desc)[0...25]{_id},    "restocks": *[      _type == "restockSubscription"      && status == "pending"      && defined(product._ref)      && !(_id in path("drafts.**"))    ][0...25]{      "productId": product._ref,      "stock": product->stock    }  }
+export type RetryCandidatesQueryResult = {
+  orders: Array<{
+    _id: string;
+    trackingEvents: Array<{
+      _key: string;
+    }> | null;
+  }>;
+  returns: Array<{
+    _id: string;
+  }>;
+  restocks: Array<{
+    productId: string | null;
+    stock: number | null;
+  }>;
+};
+
+// Source: lib/email/transactional.ts
+// Variable: EMAIL_DELIVERY_QUERY
+// Query: *[_type == "emailDelivery" && _id == $id][0]{    _id,    _rev,    status,    updatedAt  }
+export type EMAIL_DELIVERY_QUERY_RESULT = {
+  _id: string;
+  _rev: string;
+  status: "failed" | "pending" | "sending" | "sent" | null;
+  updatedAt: string | null;
+} | null;
 
 // Source: lib/sanity/queries/brands.ts
 // Variable: ALL_BRANDS_QUERY
@@ -1627,6 +1735,11 @@ export type WISHLIST_BY_USER_QUERY_RESULT = Array<{
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
+    '*[\n  _type == "order" && _id == $orderId && !(_id in path("drafts.**"))\n][0]{\n  _id,\n  orderNumber,\n  "customerEmail": coalesce(customerEmail, email),\n  "total": coalesce(totalPrice, total),\n  trackingNumber,\n  courierName,\n  courierTrackingNumber,\n  courierTrackingUrl,\n  currentLocation,\n  trackingEvents[]{_key, status, occurredAt, publicMessage, location}\n}': ORDER_EMAIL_QUERY_RESULT;
+    '*[\n  _type == "returnRequest" && _id == $requestId && !(_id in path("drafts.**"))\n][0]{\n  _id,\n  requestNumber,\n  customerEmail,\n  status,\n  adminNotes,\n  reviewedAt,\n  completedAt,\n  _updatedAt\n}': RETURN_EMAIL_QUERY_RESULT;
+    '*[\n  _type == "restockSubscription"\n  && status == "pending"\n  && product._ref == $productId\n  && !(_id in path("drafts.**"))\n]{\n  _id,\n  email,\n  product->{\n    _id,\n    "name": coalesce(title, name),\n    "slug": slug.current,\n    "stock": coalesce(stock, 0)\n  }\n}': RESTOCK_SUBSCRIPTIONS_QUERY_RESULT;
+    '{\n    "orders": *[\n      _type == "order"\n      && createdAt >= $since\n      && !(_id in path("drafts.**"))\n    ] | order(createdAt desc)[0...25]{\n      _id,\n      "trackingEvents": trackingEvents[source == "admin" && defined(_key)]{_key}\n    },\n    "returns": *[\n      _type == "returnRequest"\n      && _updatedAt >= $since\n      && !(_id in path("drafts.**"))\n    ] | order(_updatedAt desc)[0...25]{_id},\n    "restocks": *[\n      _type == "restockSubscription"\n      && status == "pending"\n      && defined(product._ref)\n      && !(_id in path("drafts.**"))\n    ][0...25]{\n      "productId": product._ref,\n      "stock": product->stock\n    }\n  }': RetryCandidatesQueryResult;
+    '\n  *[_type == "emailDelivery" && _id == $id][0]{\n    _id,\n    _rev,\n    status,\n    updatedAt\n  }\n': EMAIL_DELIVERY_QUERY_RESULT;
     '*[\n  _type == "brand"\n] | order(title asc) {\n  _id,\n  title,\n  "slug": slug.current,\n  logo{\n    asset->{\n      _id,\n      url\n    }\n  }\n}': ALL_BRANDS_QUERY_RESULT;
     '*[\n  _type == "brand"\n  && slug.current in $slugs\n] {\n  _id,\n  title,\n  "slug": slug.current\n}': BRANDS_BY_SLUGS_QUERY_RESULT;
     '*[\n  _type == "shoppingCart"\n  && clerkUserId == $clerkUserId\n] | order(updatedAt desc)[0] {\n  _id,\n  updatedAt,\n  items[]{\n    _key,\n    quantity,\n    "productId": product._ref,\n    "productExists": defined(product->._id),\n    "name": coalesce(product->title, product->name, productName),\n    "price": coalesce(product->price, priceAtSave),\n    "image": coalesce(product->images[0].asset->url, imageUrl),\n    "slug": coalesce(product->slug.current, slug)\n  }\n}': CART_BY_USER_QUERY_RESULT;

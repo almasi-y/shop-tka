@@ -64,6 +64,29 @@ function ReturnReviewControls({
       if (status === "completed") fields.completedAt = now;
 
       await client.patch(handle.documentId).set(fields).commit();
+      if (
+        status !== initialStatus ||
+        adminNotes.trim() !== initialAdminNotes.trim()
+      ) {
+        void fetch("/api/admin/customer-emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "return_status",
+            documentId: handle.documentId.replace(/^drafts\./, ""),
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              console.error("Unable to queue return email", {
+                status: response.status,
+              });
+            }
+          })
+          .catch((emailError) =>
+            console.error("Unable to queue return email", emailError),
+          );
+      }
       toast.success("Return request updated");
     } catch (error) {
       console.error("Return review update failed", error);

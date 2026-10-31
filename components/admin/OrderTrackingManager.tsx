@@ -71,6 +71,7 @@ interface EditableTrackingOrder extends Record<string, unknown> {
 
 interface OrderTrackingManagerProps {
   handle: DocumentHandle;
+  orderId: string;
   tracking: AdminTrackingData;
 }
 
@@ -101,6 +102,7 @@ function isSecureUrl(value: string) {
 
 export function OrderTrackingManager({
   handle,
+  orderId,
   tracking,
 }: OrderTrackingManagerProps) {
   const currentUser = useCurrentUser();
@@ -183,6 +185,9 @@ export function OrderTrackingManager({
 
     const now = new Date().toISOString();
     const shouldAppendEvent = Boolean(statusChanged || publicUpdate);
+    const trackingEventKey = shouldAppendEvent
+      ? crypto.randomUUID().replaceAll("-", "").slice(0, 16)
+      : null;
     const publishedHandle = {
       ...handle,
       documentId: handle.documentId.replace(/^drafts\./, ""),
@@ -210,7 +215,7 @@ export function OrderTrackingManager({
 
         if (shouldAppendEvent) {
           const event: AdminTrackingEvent = {
-            _key: crypto.randomUUID().replaceAll("-", "").slice(0, 16),
+            _key: trackingEventKey!,
             _type: "trackingEvent",
             status,
             occurredAt: now,
@@ -228,6 +233,27 @@ export function OrderTrackingManager({
         return next;
       });
       await apply(publishDocument(publishedHandle));
+      if (trackingEventKey) {
+        void fetch("/api/admin/customer-emails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "order_tracking",
+            documentId: orderId,
+            eventKey: trackingEventKey,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              console.error("Unable to queue tracking email", {
+                status: response.status,
+              });
+            }
+          })
+          .catch((emailError) =>
+            console.error("Unable to queue tracking email", emailError),
+          );
+      }
       setPublicMessage("");
       setInternalNote("");
       toast.success("Tracking update published");
